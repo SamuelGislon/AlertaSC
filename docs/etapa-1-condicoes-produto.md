@@ -8,7 +8,7 @@
 
 ## Resultado para avançar
 
-No momento, **nenhuma das quatro fontes pesquisadas está liberada como conector para a primeira implementação** segundo o critério de possuir API utilizável pelo projeto e condições de uso verificadas. INMET e CEMADEN têm APIs oficiais, mas dependem de acesso/credenciais e confirmação das condições ainda não obtidos. A Epagri/Ciram disponibiliza dados por download manual, sem API oficial documentada para ingestão recorrente. Para a Defesa Civil SC, não foi confirmado um conjunto operacional apropriado nem uma API de integração específica.
+No momento, **nenhuma das quatro fontes pesquisadas está liberada como conector para a primeira implementação** segundo o critério de possuir API utilizável pelo projeto e condições de uso verificadas. Por decisão do solicitante em 21/10/2026, a implementação inicial usará **dados fictícios/sintéticos**, sem consumir INMET, CEMADEN, Epagri/Ciram ou Defesa Civil SC. INMET e CEMADEN têm APIs oficiais, mas dependem de acesso/credenciais e confirmação das condições ainda não obtidos. A Epagri/Ciram disponibiliza dados por download manual, sem API oficial documentada para ingestão recorrente. Para a Defesa Civil SC, não foi confirmado um conjunto operacional apropriado nem uma API de integração específica.
 
 Essa conclusão é sobre prontidão de integração do AlertaSC. Não significa que os órgãos não tenham dados úteis ou que nunca possam ser integrados.
 
@@ -44,7 +44,7 @@ ALE-5 permanece **Done** e foi apenas conferida; nenhum limite foi alterado. Os 
 | Frente fria | queda de 3–5 °C | queda de 5 °C em relação à média por 2–3 dias | queda de 5 °C em relação à média por mais de 5 dias |
 | Calor extremo | +3 °C por 2 dias | +5 °C por 2–3 dias | +5 °C por 5 dias ou mais |
 
-Para vento, o estado normal continua abaixo de 40 km/h. Não foi feita alteração para resolver a diferença de redação entre os intervalos da regra e o gatilho textual do caso de uso. Antes de configurar regras em produção, a Defesa Civil municipal precisa validar operacionalmente as estações/fontes e áreas representadas, unidades, janelas de duração, horários/fuso e a interpretação das fronteiras/expressões dos critérios. Essa validação **não autoriza mudar os valores acima**.
+Para vento, o estado normal continua abaixo de 40 km/h. O solicitante confirmou em 21/10/2026 que a Defesa Civil já validou os critérios; portanto, os documentos aprovados são a fonte de verdade para a etapa seguinte e não resta validação operacional pendente nesta etapa. Os valores permanecem exatamente como registrados acima.
 
 ## ALE-6 — governança, retenção, fontes e privacidade
 
@@ -55,15 +55,24 @@ Para vento, o estado normal continua abaixo de 40 km/h. Não foi feita alteraç�
 - O alerta expira 24 horas depois de gerado. A expiração encerra sua validade de comunicação e **não apaga** o histórico/auditoria do alerta.
 - Logs não devem conter dados sensíveis ou pessoais desnecessários.
 
-### Pontos que continuam pendentes
+### Política mínima recomendada e limites da decisão
+
+- A etapa inicial usa somente dados fictícios/sintéticos, sem dados pessoais e sem licença de fornecedor externo. Conectores reais só entram após credencial, autorização e condições de uso/redistribuição documentadas.
+- Dados de cadastro do cidadão ficam ativos somente enquanto a inscrição estiver ativa e para enviar alertas conforme os dados e a finalidade informados. Ao pedir remoção, o cidadão deve ser excluído imediatamente dos próximos envios e seus dados identificáveis devem ser removidos da base ativa; preferências vinculadas são removidas junto. Não manter cadastro de supressão identificável sem necessidade e aprovação institucional.
+- O histórico de alertas e decisões é preservado conforme os requisitos, mas sem telefone, endereço, geolocalização ou outra identificação do cidadão. A expiração após 24 horas altera o estado/validade do alerta, não apaga esse histórico.
+- Armazenar somente as cinco últimas observações válidas necessárias à análise de outliers, além dos dados mínimos já associados a alertas que precisam ter histórico preservado. Dados fictícios de desenvolvimento podem ser versionados como fixtures, desde que não reproduzam pessoas reais.
+- Logs contêm somente metadados técnicos mínimos (evento, horário, resultado/código de erro e identificadores operacionais sem dados pessoais); nunca registrar telefone, credenciais, tokens, endereço ou coordenadas identificáveis. Trilha de auditoria do alerta permanece separada desses logs.
+- Não há prazo geral fixado pela LGPD para todos os dados pessoais: a retenção depende da finalidade e das hipóteses aplicáveis; encerrado o tratamento, a lei prevê eliminação, ressalvadas hipóteses de conservação. Como regra operacional proposta, remover os dados ativos do cidadão no descadastro e não atribuir prazo numérico a históricos/logs até a instituição aprovar a tabela de temporalidade e o ciclo de backups.
+
+### Aprovações institucionais ainda necessárias
 
 - Obter confirmação de acesso, termos, atribuição, limites e permissão de uso/redistribuição de cada fonte antes de ativar a respectiva integração.
-- A instituição deve identificar a autoridade/controlador e responsável institucional por proteção de dados, aprovar finalidade/base legal e aviso de privacidade e definir como atender solicitações de titulares.
-- Definir retenção dos dados pessoais dos cidadãos, preferências, payloads brutos e logs. Nenhum prazo de retenção pessoal foi inferido aqui.
-- Definir tecnicamente como a remoção do cidadão exclui/desvincula dados pessoais da base ativa e como se preserva a auditoria do alerta sem identificá-lo.
-- Confirmar a estação CEMADEN ativa em Presidente Getúlio e adequação das estações às áreas do piloto.
+- A instituição deve designar formalmente o controlador e o responsável/canal de proteção de dados e validar finalidade, base legal (incluindo se consentimento é adequado ao serviço público), aviso de privacidade e atendimento a direitos dos titulares.
+- A instituição precisa aprovar a tabela de temporalidade para logs técnicos e cópias de segurança, inclusive suas limitações, antes de tratar dados reais. Nenhum prazo numérico foi criado.
+- Confirmar as condições de exclusão em cópias de segurança e documentar a evidência do comportamento de remoção antes do cadastro real de cidadãos.
+- A confirmação de estação CEMADEN ativa e termos dos provedores só se torna bloqueadora quando for proposta uma integração real; não bloqueia o protótipo com dados fictícios.
 
-O prazo de 24 horas refere-se à validade do alerta, não à retenção de dados pessoais. Esta análise não constitui parecer jurídico ou autorização institucional.
+O prazo de 24 horas refere-se à validade do alerta, não à retenção de dados pessoais. A LGPD prevê término do tratamento quando a finalidade se esgota ou há revogação do consentimento, e admite conservação nas hipóteses legais; a ANPD informa que não há prazo geral único e destaca que consentimento no Poder Público pode não ser a base apropriada em todos os contextos. Por isso, as regras acima são uma proposta operacional mínima, não parecer jurídico nem substituto da validação do controlador. [LGPD — arts. 15, 16 e 18](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm) · [FAQ da ANPD — duração do tratamento](https://www.gov.br/anpd/pt-br/acesso-a-informacao/perguntas-frequentes) · [Guia da ANPD para o Poder Público](https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes/guia_orientativo_tratamento_de_dados_pessoais_pelo_poder_publico).
 
 ## ALE-29 — tratamento de outliers
 
@@ -75,15 +84,15 @@ O requisito afirma uso dos **cinco registros válidos anteriores** e da sua vari
 | Mediana dos cinco anteriores | A mediana de `[10, 12, 11, 13, 12]` é `12`; para uma leitura já classificada como outlier `40`, a substituição candidata seria `12`. | Robusta a valores extremos e simples de calcular. | Descarta tendência; pode achatar uma subida ou queda real. |
 | Projeção pela mediana das variações consecutivas | No mesmo histórico, as variações são `+2, -1, +2, -1`; a mediana é `+0,5`; a projeção candidata é `12,5`. Se `40` já tiver sido classificada como outlier, ela seria substituída por `12,5`. | Usa explicitamente a variação recente, compatível com a redação “variação dos últimos cinco registros”. | Cinco valores produzem quatro variações; se o requisito pretendia cinco variações, seria necessário um sexto registro. Pode extrapolar uma tendência que mudou e precisa de validação por variável/unidade. |
 
-**Recomendação para decisão, ainda não aprovada:** avaliar a projeção pela mediana das variações consecutivas, pois reflete diretamente a referência documental à variação e é menos sensível a uma variação extrema que uma média das variações. A recomendação não define que `40` seria outlier; os exemplos pressupõem apenas que uma etapa de detecção, ainda sem limiar, já o classificou.
+**Decisão do solicitante em 21/10/2026:** seguir a recomendação de suavização pela projeção da mediana das variações consecutivas. Para os cinco registros válidos anteriores `x₁ … x₅`, calcular `Δᵢ = xᵢ − xᵢ₋₁` (`i=2…5`) e projetar a leitura tratada como `x̂₆ = x₅ + mediana(Δ₂ … Δ₅)`. A leitura original permanece preservada e identificada; a projeção só substitui a leitura no fluxo tratado quando o detector a marcar como outlier. O exemplo numérico acima é ilustrativo.
 
-Antes de fixar a regra, a Defesa Civil e os responsáveis pelo produto precisam aprovar: (1) o que classifica a leitura como outlier e seu limiar por variável; (2) se “cinco registros” significa cinco valores anteriores ou cinco variações; (3) fórmula de substituição; (4) tratamento de intervalos irregulares e flags de qualidade; (5) comportamento com histórico insuficiente, respeitando o requisito atual de sinalizar e não inventar tratamento. A leitura original e a prioridade de verificação continuam obrigatórias.
+Antes de implementar em produção, a Defesa Civil deve validar a regra com leituras representativas. Continua sem definição documental o detector/limiar que decide se a leitura atual é outlier e como lacunas/flags de qualidade afetam a janela. Com histórico insuficiente, sinalizar e não aplicar tratamento, como já determina a issue. A leitura original e a prioridade de verificação continuam obrigatórias.
 
 ## ALE-24 — divulgação externa
 
 Há divergência entre os documentos validados: o PDF prevê download do comunicado para publicação manual em outras redes; RF15/RN13/UC17 do Markdown descreve publicação no Instagram por API após aprovação, com confirmação do operador e alternativa manual se a API falhar.
 
-**Recomendação de compatibilização:** manter como caminho garantido o download manual de PNG/JPEG já previsto no PDF e não habilitar publicação automática no Instagram até decisão formal dos autores da proposta e da Defesa Civil municipal. Se decidirem pela integração, aprovar separadamente conta institucional, permissões e escopo técnico antes de implementar. Nenhuma integração foi autorizada por este registro.
+**Decisão do solicitante em 21/10/2026:** o comunicado aprovado terá download de arquivo PNG/JPEG e uma opção voluntária para o operador compartilhar manualmente no Instagram. O operador escolhe iniciar o compartilhamento e confirma/publica na própria plataforma; não haverá postagem automática pelo backend ou API nesta decisão. O download continua disponível como alternativa quando o compartilhamento pelo dispositivo/plataforma não estiver disponível. Isso preserva a revisão humana e não autoriza integração de publicação automática.
 
 ## Divergências do README
 
@@ -91,9 +100,9 @@ O README atual menciona Open-Meteo, WhatsApp e expansão territorial. O piloto e
 
 ## Estado das issues e o que falta para fechar a Etapa 1
 
-- **ALE-5 — Done:** conferida, sem mudanças. Fazer somente validação operacional municipal antes da ativação em produção.
-- **ALE-6 — In Progress:** registrar a análise das fontes e decisões confirmadas. Continua aberta até obter termos/permissões de dados e aprovação institucional de privacidade e retenções pendentes.
-- **ALE-24 — In Progress:** divergência e recomendação registradas; continua aberta até decisão formal dos autores e da Defesa Civil sobre postagem manual versus integração.
-- **ALE-29 — In Progress:** opções e recomendação registradas; continua aberta até aprovação de detecção, limiar e fórmula determinística com a Defesa Civil.
+- **ALE-5 — Done:** conferida, sem mudanças; o solicitante confirmou validação municipal dos critérios. Os documentos aprovados são a fonte de verdade.
+- **ALE-6 — In Progress:** proposta mínima de privacidade e ciclo de vida registrada. Continua aberta até validação do controlador/responsável institucional e aprovação da tabela de temporalidade de logs/backups; fontes reais permanecem desativadas enquanto termos/permissões não forem obtidos.
+- **ALE-24 — Done:** decisão do solicitante registrada: download e compartilhamento manual opcional no Instagram, sem publicação automática.
+- **ALE-29 — In Progress:** fórmula pela mediana das variações consecutivas aprovada pelo solicitante; falta validar com a Defesa Civil e definir o detector/limiar antes de implementação em produção.
 
-**Saída necessária para considerar a Etapa 1 fechada:** formalizar as autorizações/termos e decisões institucionais acima. Até lá, a recomendação para a primeira implementação é **não integrar automaticamente nenhuma das quatro fontes**; usar INMET e CEMADEN somente após acesso e condições confirmados, e reconsiderar Epagri/Ciram ou Defesa Civil quando houver API oficial aplicável e condições verificáveis.
+**Saída necessária para considerar a Etapa 1 fechada:** validar a proposta de privacidade/temporalidade com o responsável institucional e a regra de outlier com a Defesa Civil. Para o protótipo, usar somente dados fictícios/sintéticos. Nenhuma das quatro fontes externas será integrada até existir API/acesso aplicável e condições de uso confirmadas.
