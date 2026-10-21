@@ -3,9 +3,11 @@ import { InitialSchema1792540800000 } from './migrations/InitialSchema2026102100
 import { AddSyntheticCitizenAccess1792540800001 } from './migrations/AddSyntheticCitizenAccess1792540800001.js';
 
 export function createDataSourceOptions(env: NodeJS.ProcessEnv): DataSourceOptions {
-  const url = env.NODE_ENV === 'test'
-    ? (env.DATABASE_TEST_URL?.trim() || env.DATABASE_URL?.trim() || defaultLocalDatabaseUrl(env))
-    : (env.DATABASE_URL?.trim() || defaultLocalDatabaseUrl(env));
+  const url = env.NODE_ENV === 'production'
+    ? env.DATABASE_URL?.trim()
+    : env.NODE_ENV === 'test'
+      ? (env.DATABASE_TEST_URL?.trim() || env.DATABASE_URL?.trim() || defaultLocalDatabaseUrl(env))
+      : (env.DATABASE_URL?.trim() || defaultLocalDatabaseUrl(env));
   if (!url) throw new Error('DATABASE_URL must be configured');
 
   return {

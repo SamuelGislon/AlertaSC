@@ -63,6 +63,8 @@ O frontend encaminha as chamadas `/api` para a API. O worker agenda a expiraçã
 
 O login usa CPF e senha; a API aplica Argon2id, emite JWT de acesso com duração de 15 minutos e mantém refresh token rotativo em cookie `HttpOnly` por até 7 dias. Logout revoga a sessão. A redefinição administrativa de senha invalida sessões ativas; não há recuperação por e-mail ou SMS.
 
+Em modo de teste, a conexão seleciona `alertasc_test` (ou `DATABASE_TEST_URL`). Em produção, `DATABASE_URL` explícita é obrigatória; a aplicação não usa o endereço padrão do banco local.
+
 ## Dados de demonstração
 
 Entre com o operador sintético criado pelo seed. A aba de alertas exige que o servidor conceda o bloqueio global à sessão; duas sessões não podem operar a fila ao mesmo tempo. Na tela de acesso, também é possível abrir o portal cidadão sintético. O portal não aceita telefone, endereço, CPF ou localização informados pelo usuário; ele usa apenas fixtures sintéticas e permite editar preferências e remover o cadastro de demonstração.
