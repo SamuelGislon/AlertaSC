@@ -69,6 +69,16 @@ Em modo de teste, a conexão seleciona `alertasc_test` (ou `DATABASE_TEST_URL`).
 
 Entre com o operador sintético criado pelo seed. A aba de alertas exige que o servidor conceda o bloqueio global à sessão; duas sessões não podem operar a fila ao mesmo tempo. Na tela de acesso, também é possível abrir o portal cidadão sintético. O portal não aceita telefone, endereço, CPF ou localização informados pelo usuário; ele usa apenas fixtures sintéticas e permite editar preferências e remover o cadastro de demonstração.
 
+### Revisão, auditoria e operadores sintéticos
+
+- Na fila de alertas, a pessoa operadora pode assumir o alerta e, em seguida, aprovar ou reprovar com justificativa. A API valida as permissões, a posse do alerta e as transições; a interface não envia nem publica o conteúdo.
+- Cada alerta mostra origem sintética, área, horários, resumo e a incerteza de não haver observação real ou validação por fonte nesta etapa. O histórico de auditoria pode ser consultado dentro da fila.
+- Se um bloqueio órfão impedir o acesso, somente um administrador pode fazer a recuperação manual, informando justificativa. O sistema registra o evento de recuperação.
+- A aba **Operadores sintéticos** permite que um administrador provisione uma conta fictícia e desative contas sintéticas. As credenciais de provisionamento aparecem uma vez na interface e não são registradas nos logs. Nunca use essa função para criar uma conta real nesta fase.
+- A aba **Cadastros sintéticos** é uma ferramenta administrativa de demonstração; o portal do cidadão representa o cadastro voluntário, edição de preferências, consentimento e remoção, apenas com dados fictícios.
+
+As rotas de fixture, listagem e manutenção de contas sintéticas são bloqueadas em produção. O provisionamento real de operadores, a coleta de dados reais de cidadãos e a ativação institucional permanecem pendentes de validação conforme `docs/etapa-1-condicoes-produto.md`.
+
 A API desativa os endpoints de fixtures se `NODE_ENV=production` ou `PERSONAL_DATA_MODE` não for `synthetic`. O uso de dados pessoais reais requer a validação institucional definida em `docs/etapa-1-condicoes-produto.md`; este protótipo não habilita esse fluxo.
 
 ## Infraestrutura fora desta etapa

@@ -19,7 +19,13 @@ export class AdminController {
     return this.admin.createOperatorFixture(actor, body?.fixtureKey);
   }
 
+  @Get('operators')
+  @UseGuards(SyntheticDataGuard)
+  @RequirePermission('USER_MANAGE')
+  operators() { return this.admin.listSyntheticOperators(); }
+
   @Patch('operators/:id/password')
+  @UseGuards(SyntheticDataGuard)
   @RequirePermission('USER_MANAGE')
   resetPassword(
     @CurrentPrincipal() actor: AuthenticatedRequest['user'],
@@ -30,6 +36,7 @@ export class AdminController {
   }
 
   @Patch('operators/:id/disable')
+  @UseGuards(SyntheticDataGuard)
   @RequirePermission('USER_MANAGE')
   disableOperator(@CurrentPrincipal() actor: AuthenticatedRequest['user'], @Param('id') id: string) {
     return this.admin.disableOperator(actor, id);

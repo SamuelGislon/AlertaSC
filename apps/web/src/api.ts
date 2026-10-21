@@ -10,6 +10,25 @@ export interface AlertView {
   expiresAt: string;
   synthetic: true;
 }
+export type ReviewDecision = 'APPROVED' | 'REJECTED';
+export interface AuditEvent {
+  id: string;
+  actorId: string | null;
+  action: string;
+  occurredAt: string;
+  previousState: string | null;
+  newState: string | null;
+  reason: string | null;
+}
+export interface SyntheticOperator {
+  id: string;
+  active: boolean;
+  synthetic: true;
+  roles: string[];
+}
+export interface NewSyntheticOperator extends SyntheticOperator {
+  oneTimeCredentials: { cpf: string; password: string };
+}
 export interface CitizenFixture {
   id: string;
   active: boolean;
@@ -67,6 +86,20 @@ export const api = {
   acquireAlertTab: () => apiRequest<{ acquired: true }>('/alert-tab/acquire', { method: 'POST' }),
   releaseAlertTab: () => apiRequest<{ released: boolean }>('/alert-tab/release', { method: 'POST' }),
   alerts: () => apiRequest<AlertView[]>('/alerts'),
+  claimAlert: (id: string) => apiRequest<{ claimed: true }>(`/alerts/${id}/claim`, { method: 'POST' }),
+  transitionAlert: (id: string, status: ReviewDecision, reason: string) =>
+    apiRequest<{ status: string }>(`/alerts/${id}/transition`, {
+      method: 'POST', body: JSON.stringify({ status, reason }),
+    }),
+  alertAudit: (id: string) => apiRequest<AuditEvent[]>(`/alerts/${id}/audit`),
+  recoverAlertTab: (reason: string) => apiRequest<{ recovered: true }>('/alert-tab/recover', {
+    method: 'POST', body: JSON.stringify({ reason }),
+  }),
+  operators: () => apiRequest<SyntheticOperator[]>('/admin/operators'),
+  createOperatorFixture: (fixtureKey: string) => apiRequest<NewSyntheticOperator>('/admin/operators/fixtures', {
+    method: 'POST', body: JSON.stringify({ fixtureKey }),
+  }),
+  disableOperator: (id: string) => apiRequest<{ disabled: true }>(`/admin/operators/${id}/disable`, { method: 'PATCH' }),
   createCitizenFixture: (fixtureKey: string) => apiRequest<CitizenFixture>('/admin/citizens/fixtures', {
     method: 'POST', body: JSON.stringify({ fixtureKey }),
   }),

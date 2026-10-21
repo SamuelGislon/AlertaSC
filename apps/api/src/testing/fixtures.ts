@@ -35,6 +35,11 @@ export async function seedSyntheticFixtures(database: DataSource): Promise<{
        'fixture', 'Presidente Getúlio/SC — região fictícia', 'AWAITING_TRIAGE', $2, $3, $4, true)`,
     [alertId, generatedAt, expiresAt, admin.id],
   );
+  await database.query(
+    `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, new_state, metadata)
+     VALUES ($1, NULL, 'SYNTHETIC_ALERT_GENERATED', 'alert', $2, 'AWAITING_TRIAGE', '{"synthetic":true}'::jsonb)`,
+    [randomUUID(), alertId],
+  );
   return { admin, operator, alertId };
 }
 

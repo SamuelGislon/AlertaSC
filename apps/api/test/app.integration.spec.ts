@@ -170,6 +170,66 @@ describe('AlertaSC API with PostgreSQL', () => {
       .expect(403);
   });
 
+  it('lets only an admin provision and list synthetic operators without exposing personal fields', async () => {
+    const [admin, operator] = await Promise.all([login(fixtures.admin), login(fixtures.operator)]);
+    await request(app.getHttpServer()).get('/api/v1/admin/operators')
+      .set('Authorization', `Bearer ${operator.accessToken}`).expect(403);
+
+    const created = await request(app.getHttpServer()).post('/api/v1/admin/operators/fixtures')
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .send({ fixtureKey: 'operator-pg-01' }).expect(201);
+    expect(created.body.synthetic).toBe(true);
+    expect(created.body.oneTimeCredentials.cpf).toMatch(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/);
+    expect(created.body.oneTimeCredentials.password).toEqual(expect.any(String));
+
+    const stored = await database.query(
+      `SELECT oa.password_hash, p.synthetic FROM operator_accounts oa
+         JOIN people p ON p.id = oa.person_id WHERE oa.id = $1`,
+      [created.body.id],
+    );
+    expect(stored[0].synthetic).toBe(true);
+    expect(stored[0].password_hash).not.toBe(created.body.oneTimeCredentials.password);
+
+    const list = await request(app.getHttpServer()).get('/api/v1/admin/operators')
+      .set('Authorization', `Bearer ${admin.accessToken}`).expect(200);
+    expect(list.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: created.body.id, active: true, roles: ['OPERATOR'], synthetic: true }),
+    ]));
+    expect(JSON.stringify(list.body)).not.toMatch(/cpf|phone|address|password|hash/i);
+  });
+
+  it('revokes disabled synthetic operator sessions and prevents an admin from disabling its own account', async () => {
+    const [admin, operator] = await Promise.all([login(fixtures.admin), login(fixtures.operator)]);
+    await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.admin.id}/disable`)
+      .set('Authorization', `Bearer ${admin.accessToken}`).expect(409);
+    await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.operator.id}/disable`)
+      .set('Authorization', `Bearer ${admin.accessToken}`).expect(200);
+
+    await request(app.getHttpServer()).get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${operator.accessToken}`).expect(401);
+    const listed = await request(app.getHttpServer()).get('/api/v1/admin/operators')
+      .set('Authorization', `Bearer ${admin.accessToken}`).expect(200);
+    expect(listed.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: fixtures.operator.id, active: false }),
+    ]));
+  });
+
+  it('exposes an alert audit timeline only to authenticated operators holding the alert-tab lock', async () => {
+    const session = await login(fixtures.operator);
+    await request(app.getHttpServer()).get(`/api/v1/alerts/${fixtures.alertId}/audit`).expect(401);
+    await request(app.getHttpServer()).get(`/api/v1/alerts/${fixtures.alertId}/audit`)
+      .set('Authorization', `Bearer ${session.accessToken}`).expect(403);
+    await request(app.getHttpServer()).post('/api/v1/alert-tab/acquire')
+      .set('Authorization', `Bearer ${session.accessToken}`).expect(201);
+
+    const history = await request(app.getHttpServer()).get(`/api/v1/alerts/${fixtures.alertId}/audit`)
+      .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
+    expect(history.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'SYNTHETIC_ALERT_GENERATED', newState: 'AWAITING_TRIAGE' }),
+    ]));
+    expect(JSON.stringify(history.body)).not.toMatch(/cpf|phone|address|latitude|longitude|token|password/i);
+  });
+
   it('records alert transitions and expiration without deleting audit history', async () => {
     const session = await login();
     await request(app.getHttpServer()).post('/api/v1/alert-tab/acquire')
@@ -284,11 +344,19 @@ describe('AlertaSC API with PostgreSQL', () => {
   });
 
   it('disables synthetic citizen fixtures in production mode', async () => {
+    const session = await login();
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
     try {
       await request(app.getHttpServer()).post('/api/v1/citizens/fixtures')
         .send({ fixtureKey: 'resident-pg-01' }).expect(403);
+      await request(app.getHttpServer()).get('/api/v1/admin/operators')
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(403);
+      await request(app.getHttpServer()).post('/api/v1/admin/operators/fixtures')
+        .set('Authorization', `Bearer ${session.accessToken}`)
+        .send({ fixtureKey: 'operator-pg-01' }).expect(403);
+      await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.operator.id}/disable`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(403);
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
     }

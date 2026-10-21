@@ -44,6 +44,20 @@ export class AlertService {
     return this.toResponse(row);
   }
 
+  async auditFor(principal: RequestPrincipal, alertId: string): Promise<Array<Record<string, unknown>>> {
+    await this.alertTab.assertAccess(principal.sessionId);
+    await this.findAlert(this.database, alertId);
+    const events = await this.database.query(
+      `SELECT id, actor_id AS "actorId", action, occurred_at AS "occurredAt", previous_state AS "previousState",
+              new_state AS "newState", reason
+         FROM audit_events
+        WHERE entity_type = 'alert' AND entity_id = $1
+        ORDER BY occurred_at ASC, id ASC`,
+      [alertId],
+    );
+    return events;
+  }
+
   async claim(principal: RequestPrincipal, alertId: string): Promise<{ claimed: true }> {
     await this.alertTab.assertAccess(principal.sessionId);
     const runner = this.database.createQueryRunner();

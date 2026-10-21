@@ -24,6 +24,12 @@ export class AlertController {
     return this.alerts.get(principal, id);
   }
 
+  @Get(':id/audit')
+  @RequirePermission('ALERT_READ')
+  audit(@CurrentPrincipal() principal: AuthenticatedRequest['user'], @Param('id') id: string) {
+    return this.alerts.auditFor(principal, id);
+  }
+
   @Post(':id/claim')
   @RequirePermission('ALERT_EDIT')
   claim(@CurrentPrincipal() principal: AuthenticatedRequest['user'], @Param('id') id: string) {

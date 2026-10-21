@@ -4,9 +4,10 @@ import { AlertBoard } from './components/AlertBoard.js';
 import { LoginForm } from './components/LoginForm.js';
 import { SyntheticCitizens } from './components/SyntheticCitizens.js';
 import { CitizenPortal } from './components/CitizenPortal.js';
+import { OperatorManagement } from './components/OperatorManagement.js';
 import { api, currentAccessToken, type AlertView, type OperatorSession, setAccessToken } from './api.js';
 
-type Page = 'alerts' | 'citizens';
+type Page = 'alerts' | 'citizens' | 'operators';
 
 export function App() {
   const [operator, setOperator] = useState<OperatorSession | null>(null);
@@ -16,12 +17,18 @@ export function App() {
   const [lockGranted, setLockGranted] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
+  const [lockAttempt, setLockAttempt] = useState(0);
 
   const logout = useCallback(async () => {
     await api.logout();
     setOperator(null);
     setLockGranted(false);
     setAlerts([]);
+  }, []);
+
+  const recoverAlertLock = useCallback(async (reason: string) => {
+    await api.recoverAlertTab(reason);
+    setLockAttempt((attempt) => attempt + 1);
   }, []);
 
   const signIn = useCallback(async ({ cpf, password }: { cpf: string; password: string }) => {
@@ -50,6 +57,7 @@ export function App() {
     if (!operator || page !== 'alerts') {
       setLockGranted(false);
       setAlerts([]);
+      setLockError(null);
       return;
     }
     let active = true;
@@ -73,7 +81,7 @@ export function App() {
       socket?.disconnect();
       void api.releaseAlertTab().catch(() => undefined);
     };
-  }, [operator, page]);
+  }, [operator, page, lockAttempt]);
 
   if (!operator && citizenPortal) return <CitizenPortal onBackToLogin={() => setCitizenPortal(false)} />;
 
@@ -94,15 +102,31 @@ export function App() {
         <nav className="flex items-center gap-2" aria-label="Navegação principal">
           <button onClick={() => setPage('alerts')} className="rounded-lg px-3 py-2 text-sm hover:bg-slate-100">Alertas</button>
           {operator.roles.includes('ADMIN') && <button onClick={() => setPage('citizens')} className="rounded-lg px-3 py-2 text-sm hover:bg-slate-100">Cadastros sintéticos</button>}
+          {operator.roles.includes('ADMIN') && <button onClick={() => setPage('operators')} className="rounded-lg px-3 py-2 text-sm hover:bg-slate-100">Operadores sintéticos</button>}
           <button onClick={() => void logout()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">Sair</button>
         </nav>
       </div>
     </header>
     <div className="mx-auto max-w-6xl space-y-4 px-4 py-6">
       {page === 'alerts' ? <>
-        {lockError && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4">{lockError}</p>}
-        <AlertBoard lockGranted={lockGranted} alerts={alerts} />
-      </> : <SyntheticCitizens />}
+        <AlertBoard
+          lockGranted={lockGranted}
+          alerts={alerts}
+          lockError={lockError}
+          canRecover={operator.roles.includes('ADMIN')}
+          onRecover={recoverAlertLock}
+          onClaim={async (alertId) => {
+            await api.claimAlert(alertId);
+            setAlerts(await api.alerts());
+          }}
+          onTransition={async (alertId, status, reason) => {
+            const result = await api.transitionAlert(alertId, status, reason);
+            setAlerts(await api.alerts());
+            return result.status;
+          }}
+          onLoadAudit={api.alertAudit}
+        />
+      </> : page === 'citizens' ? <SyntheticCitizens /> : <OperatorManagement />}
     </div>
   </main>;
 }

@@ -60,6 +60,19 @@ export class AdminService {
     return { id: operatorId, synthetic: true, oneTimeCredentials: { cpf: formatCpf(identity.cpf), password } };
   }
 
+  async listSyntheticOperators() {
+    const rows = await this.database.query(
+      `SELECT oa.id, oa.roles, oa.active, p.synthetic
+         FROM operator_accounts oa
+         JOIN people p ON p.id = oa.person_id
+        WHERE p.synthetic = true
+        ORDER BY oa.id`,
+    );
+    return rows.map((row: { id: string; roles: string[]; active: boolean; synthetic: boolean }) => ({
+      id: row.id, roles: row.roles, active: row.active, synthetic: row.synthetic,
+    }));
+  }
+
   async resetOperatorPassword(actor: RequestPrincipal, operatorId: string, passwordValue: unknown) {
     const password = typeof passwordValue === 'string' ? passwordValue : '';
     if (!password || password.length > 128) throw new ConflictException('invalid_password');
@@ -69,8 +82,10 @@ export class AdminService {
     await runner.startTransaction();
     try {
       const updated = returnedRows<{ id: string }>(await runner.query(
-        `UPDATE operator_accounts SET password_hash = $2
-          WHERE id = $1 AND active = true RETURNING id`,
+        `UPDATE operator_accounts oa SET password_hash = $2
+           FROM people p
+          WHERE oa.id = $1 AND oa.person_id = p.id AND p.synthetic = true AND oa.active = true
+          RETURNING oa.id`,
         [operatorId, passwordHash],
       ));
       if (!updated.length) throw new NotFoundException('operator_not_found');
@@ -96,12 +111,32 @@ export class AdminService {
     await runner.connect();
     await runner.startTransaction();
     try {
-      const updated = returnedRows<{ id: string }>(await runner.query(
-        `UPDATE operator_accounts SET active = false, disabled_at = now()
-          WHERE id = $1 AND active = true RETURNING id`,
+      // Serialize account disable operations so concurrent requests cannot remove
+      // the last active administrator at the same time.
+      await runner.query('SELECT pg_advisory_xact_lock(4214001001)');
+      const target = returnedRows<{ id: string; roles: string[] }>(await runner.query(
+        `SELECT oa.id, oa.roles
+           FROM operator_accounts oa
+           JOIN people p ON p.id = oa.person_id
+          WHERE oa.id = $1 AND p.synthetic = true AND oa.active = true
+          FOR UPDATE OF oa`,
         [operatorId],
-      ));
-      if (!updated.length) throw new NotFoundException('operator_not_found');
+      ))[0];
+      if (!target) throw new NotFoundException('operator_not_found');
+      if (actor.operatorId === operatorId) throw new ConflictException('cannot_disable_self');
+      if (target.roles.includes('ADMIN')) {
+        const otherAdmins = returnedRows<{ id: string }>(await runner.query(
+          `SELECT id FROM operator_accounts
+            WHERE active = true AND roles @> ARRAY['ADMIN']::text[] AND id <> $1
+            LIMIT 1`,
+          [operatorId],
+        ));
+        if (!otherAdmins.length) throw new ConflictException('cannot_disable_last_admin');
+      }
+      await runner.query(
+        'UPDATE operator_accounts SET active = false, disabled_at = now() WHERE id = $1',
+        [operatorId],
+      );
       await runner.query('UPDATE refresh_sessions SET revoked_at = COALESCE(revoked_at, now()) WHERE operator_id = $1', [operatorId]);
       const leases = returnedRows<{ singleton_id: number }>(await runner.query(
         'DELETE FROM alert_tab_lease WHERE operator_id = $1 RETURNING singleton_id',
