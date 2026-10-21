@@ -2,9 +2,13 @@
 
 ## Plataforma Inteligente para Monitoramento e Disseminação de Alertas de Desastres Naturais
 
-> Documento arquitetural do projeto. O repositório contém, nesta fase, somente a especificação técnica da solução.
+> Especificação arquitetural do projeto. A Etapa 2 adiciona uma base executável local; os demais módulos descritos aqui continuam sendo visão futura e seguem as decisões aprovadas em `docs/etapa-1-condicoes-produto.md`.
 
 O **AlertaSC** é uma plataforma para coletar, consolidar e disseminar informações sobre riscos meteorológicos, hidrológicos e geológicos em Santa Catarina.
+
+## Executar a base local
+
+A base executável atual usa exclusivamente dados sintéticos. Siga [o guia de configuração local](docs/etapa-2-execucao-local.md) para preparar o PostgreSQL/PostGIS, executar migrações, criar o operador sintético e iniciar frontend, API e worker.
 
 O primeiro piloto será realizado em **Presidente Getúlio/SC**, com uma arquitetura preparada para expansão aos demais municípios do estado. A plataforma deverá reduzir o tempo entre a publicação de um aviso oficial e sua comunicação à população, mantendo revisão humana, rastreabilidade e histórico de todas as decisões.
 

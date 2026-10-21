@@ -1,0 +1,23 @@
+{
+  "name": "alertasc",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.9.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["argon2", "esbuild"]
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "dev": "pnpm --parallel --filter @alertasc/api --filter @alertasc/web --filter @alertasc/worker dev",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "test:unit": "pnpm --filter @alertasc/domain test && pnpm --filter @alertasc/api test:unit && pnpm --filter @alertasc/web test",
+    "test:integration": "pnpm --filter @alertasc/data test:integration && pnpm --filter @alertasc/api test:integration",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "db:migrate": "pnpm --filter @alertasc/data migrate",
+    "db:seed:synthetic": "pnpm --filter @alertasc/api seed:synthetic"
+  }
+}
