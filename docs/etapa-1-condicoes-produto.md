@@ -50,43 +50,57 @@ Para vento, o estado normal continua abaixo de 40 km/h. O solicitante confirmou 
 
 ### Decisões confirmadas
 
-- A Defesa Civil municipal indicará uma pessoa responsável e o sistema terá uma conta individual para essa pessoa.
-- O cidadão opta voluntariamente por se cadastrar e pode remover seu cadastro quando quiser.
-- O alerta expira 24 horas depois de gerado. A expiração encerra sua validade de comunicação e **não apaga** o histórico/auditoria do alerta.
+- A Defesa Civil municipal indicará uma pessoa responsável, com conta individual.
+- O cadastro de cidadãos é voluntário e pode ser removido a qualquer momento.
+- O alerta expira 24 horas após sua geração; expirar não apaga seu histórico/auditoria.
 - Logs não devem conter dados sensíveis ou pessoais desnecessários.
+- O protótipo inicial usa apenas dados fictícios/sintéticos; não recebe cadastros reais nem consome fontes externas.
 
-### Política mínima recomendada e limites da decisão
+### Política operacional escolhida para o protótipo
 
-- A etapa inicial usa somente dados fictícios/sintéticos, sem dados pessoais e sem licença de fornecedor externo. Conectores reais só entram após credencial, autorização e condições de uso/redistribuição documentadas.
-- Dados de cadastro do cidadão ficam ativos somente enquanto a inscrição estiver ativa e para enviar alertas conforme os dados e a finalidade informados. Ao pedir remoção, o cidadão deve ser excluído imediatamente dos próximos envios e seus dados identificáveis devem ser removidos da base ativa; preferências vinculadas são removidas junto. Não manter cadastro de supressão identificável sem necessidade e aprovação institucional.
-- O histórico de alertas e decisões é preservado conforme os requisitos, mas sem telefone, endereço, geolocalização ou outra identificação do cidadão. A expiração após 24 horas altera o estado/validade do alerta, não apaga esse histórico.
-- Armazenar somente as cinco últimas observações válidas necessárias à análise de outliers, além dos dados mínimos já associados a alertas que precisam ter histórico preservado. Dados fictícios de desenvolvimento podem ser versionados como fixtures, desde que não reproduzam pessoas reais.
-- Logs contêm somente metadados técnicos mínimos (evento, horário, resultado/código de erro e identificadores operacionais sem dados pessoais); nunca registrar telefone, credenciais, tokens, endereço ou coordenadas identificáveis. Trilha de auditoria do alerta permanece separada desses logs.
-- Não há prazo geral fixado pela LGPD para todos os dados pessoais: a retenção depende da finalidade e das hipóteses aplicáveis; encerrado o tratamento, a lei prevê eliminação, ressalvadas hipóteses de conservação. Como regra operacional proposta, remover os dados ativos do cidadão no descadastro e não atribuir prazo numérico a históricos/logs até a instituição aprovar a tabela de temporalidade e o ciclo de backups.
+Por delegação do solicitante, esta política fica definida como padrão de produto. Os ciclos de 30 dias são decisões operacionais revisáveis, não prazos fixados pela LGPD.
 
-### Aprovações institucionais ainda necessárias
+- **Finalidade e base legal proposta:** cadastro por manifestação afirmativa, com aviso de privacidade antes da inscrição; usar os dados apenas para os alertas e a área/canal escolhidos. Recusar ou remover o cadastro não afeta outros serviços municipais. A base proposta para o produto é consentimento, que o controlador municipal precisa confirmar como apropriado ao contexto concreto antes de receber dados reais.
+- **Cadastro e descadastro:** guardar somente campos exigidos pelos requisitos validados. O pedido de remoção bloqueia imediatamente novos envios e apaga contato e preferências da base ativa; não manter lista de supressão identificável. Disponibilizar forma acessível de remoção e encaminhar outros pedidos de titulares ao canal oficial municipal, ainda a designar.
+- **Backups:** cópias criptografadas, acesso restrito e rotação de no máximo 30 dias. O descadastro vale imediatamente na base ativa; cópia residual expira em até 30 dias e não pode ser usada em envios rotineiros. Manter, separado dos logs, um registro de reconciliação de descadastros com referência pseudônima e acesso exclusivo à restauração; apagá-lo quando a última cópia que poderia reintroduzir o cadastro expirar (até 30 dias). Após restauração, reaplicar exclusões antes de habilitar envios.
+- **Leituras ambientais:** até autorização de fonte, usar fixtures sintéticas. Depois, manter na área de trabalho somente as cinco observações válidas mais recentes de cada série (mesma estação, variável e unidade) e o retrato mínimo que fundamentou cada alerta. Leituras antigas saem da janela quando substituídas; retratos usados em alerta seguem a regra de auditoria.
+- **Alertas e auditoria:** preservar histórico/auditoria durante a operação, sem identificadores de cidadãos. Expirar em 24 horas muda o estado, não apaga o histórico. No encerramento do piloto, exportar ou eliminar conforme a tabela de temporalidade e as regras de arquivo público aprovadas pelo município; não inventar prazo em anos.
+- **Logs técnicos:** retenção móvel de 30 dias, limitada a evento, horário, resultado/código de erro, identificadores técnicos e correlação. Não incluir telefone, endereço, coordenadas identificáveis, identificadores de cidadãos, credenciais, tokens ou conteúdo desnecessário. Separar logs da auditoria e restringir acesso.
+- **Operador:** conta individual enquanto formalmente designado; desativá-la quando cessar a designação. A auditoria guarda somente o identificador operacional necessário para atribuir decisões, sem credenciais ou dados de contato.
 
-- Obter confirmação de acesso, termos, atribuição, limites e permissão de uso/redistribuição de cada fonte antes de ativar a respectiva integração.
-- A instituição deve designar formalmente o controlador e o responsável/canal de proteção de dados e validar finalidade, base legal (incluindo se consentimento é adequado ao serviço público), aviso de privacidade e atendimento a direitos dos titulares.
-- A instituição precisa aprovar a tabela de temporalidade para logs técnicos e cópias de segurança, inclusive suas limitações, antes de tratar dados reais. Nenhum prazo numérico foi criado.
-- Confirmar as condições de exclusão em cópias de segurança e documentar a evidência do comportamento de remoção antes do cadastro real de cidadãos.
-- A confirmação de estação CEMADEN ativa e termos dos provedores só se torna bloqueadora quando for proposta uma integração real; não bloqueia o protótipo com dados fictícios.
+### Aprovação institucional antes de dados reais
 
-O prazo de 24 horas refere-se à validade do alerta, não à retenção de dados pessoais. A LGPD prevê término do tratamento quando a finalidade se esgota ou há revogação do consentimento, e admite conservação nas hipóteses legais; a ANPD informa que não há prazo geral único e destaca que consentimento no Poder Público pode não ser a base apropriada em todos os contextos. Por isso, as regras acima são uma proposta operacional mínima, não parecer jurídico nem substituto da validação do controlador. [LGPD — arts. 15, 16 e 18](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm) · [FAQ da ANPD — duração do tratamento](https://www.gov.br/anpd/pt-br/acesso-a-informacao/perguntas-frequentes) · [Guia da ANPD para o Poder Público](https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes/guia_orientativo_tratamento_de_dados_pessoais_pelo_poder_publico).
+A política permite avançar com dados sintéticos, mas não substitui validação formal do controlador municipal. Antes do primeiro cadastro real, o município deve designar controlador e canal de privacidade, confirmar a base legal, aprovar aviso e processo de direitos, e aceitar os ciclos de 30 dias para logs/backups e o tratamento de cópias residuais. Confirmar também os termos de cada fonte antes de habilitar seu conector.
+
+A LGPD trata do término, eliminação e direitos do titular, mas não fixa prazo geral único de retenção; conservação depende da finalidade e das hipóteses legais. A ANPD alerta que consentimento nem sempre é adequado no Poder Público, embora possa ser considerado quando a escolha é livre e sem prejuízo ao cidadão. Assim, consentimento é a base proposta para o cadastro voluntário, sujeita à confirmação do controlador, e não parecer jurídico. [LGPD — arts. 15, 16 e 18](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm) · [FAQ da ANPD — duração do tratamento](https://www.gov.br/anpd/pt-br/acesso-a-informacao/perguntas-frequentes) · [Guia da ANPD para o Poder Público](https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes/guia_orientativo_tratamento_de_dados_pessoais_pelo_poder_publico).
+
 
 ## ALE-29 — tratamento de outliers
 
-O requisito afirma uso dos **cinco registros válidos anteriores** e da sua variação para suavizar leituras anômalas. A leitura original deve ser preservada, tratamento deve ficar sinalizado e, se a leitura tratada alcançar um gatilho, deve haver indicação de verificação prioritária. O documento não define equação nem limiar que determina se um valor é outlier.
+O requisito validado determina usar os cinco registros válidos anteriores e sua variação, preservar o valor original e sinalizar leituras tratadas. A equação e o limiar não estavam especificados. Em 21/10/2026, o solicitante autorizou definir a regra para o protótipo e revisá-la depois, se necessário.
 
-| Opção técnica a avaliar | Exemplo ilustrativo, sem limiar aprovado | Vantagens | Limitações |
-| --- | --- | --- | --- |
-| Média dos cinco anteriores | `[10, 12, 11, 13, 12]` tem média `11,6`; se uma leitura já classificada como outlier fosse `40`, a substituição candidata seria `11,6`. | Simples e fácil de explicar. | A média é sensível a valores extremos; não representa tendência explicitamente e pode atrasar uma mudança real. |
-| Mediana dos cinco anteriores | A mediana de `[10, 12, 11, 13, 12]` é `12`; para uma leitura já classificada como outlier `40`, a substituição candidata seria `12`. | Robusta a valores extremos e simples de calcular. | Descarta tendência; pode achatar uma subida ou queda real. |
-| Projeção pela mediana das variações consecutivas | No mesmo histórico, as variações são `+2, -1, +2, -1`; a mediana é `+0,5`; a projeção candidata é `12,5`. Se `40` já tiver sido classificada como outlier, ela seria substituída por `12,5`. | Usa explicitamente a variação recente, compatível com a redação “variação dos últimos cinco registros”. | Cinco valores produzem quatro variações; se o requisito pretendia cinco variações, seria necessário um sexto registro. Pode extrapolar uma tendência que mudou e precisa de validação por variável/unidade. |
+### Regra determinística definida para o protótipo
 
-**Decisão do solicitante em 21/10/2026:** seguir a recomendação de suavização pela projeção da mediana das variações consecutivas. Para os cinco registros válidos anteriores `x₁ … x₅`, calcular `Δᵢ = xᵢ − xᵢ₋₁` (`i=2…5`) e projetar a leitura tratada como `x̂₆ = x₅ + mediana(Δ₂ … Δ₅)`. A leitura original permanece preservada e identificada; a projeção só substitui a leitura no fluxo tratado quando o detector a marcar como outlier. O exemplo numérico acima é ilustrativo.
+1. Ordenar por horário e usar os cinco registros válidos imediatamente anteriores da mesma estação/série, variável e unidade. Válido significa passar a indicação de qualidade da fonte e conter valor numérico finito, horário e unidade coerentes. Não criar limites físicos adicionais.
+2. Se faltarem cinco registros, houver mistura de estação/variável/unidade ou a cadência for incompatível, sinalizar janela insuficiente/incompatível e não suavizar. Comparar os intervalos de x₁ até x₆ com a cadência nominal declarada pela fonte, considerando a resolução dos timestamps. Se a fonte não declarar cadência, exigir que todos esses intervalos sejam iguais após truncamento à menor unidade de tempo presente nos timestamps. Não juntar séries diferentes.
+3. Para os cinco valores x₁ … x₅, calcular quatro variações consecutivas Δᵢ = xᵢ − xᵢ₋₁ (i=2…5) e projetar x̂₆ = x₅ + mediana(Δ₂ … Δ₅).
+4. Calcular mΔ = mediana(Δ₂ … Δ₅) e MADΔ = mediana(|Δᵢ − mΔ|). Se MADΔ > 0, usar s = 1,4826 × MADΔ e marcar x₆ como candidata a outlier quando |x₆ − x̂₆| > 3 × s. Igualdade ao limite não é outlier.
+5. Se MADΔ = 0, o limite é zero; qualquer diferença não nula entre a leitura atual e a projeção é candidata a outlier. Como isso pode marcar mudança real de patamar, preservar o original e exigir revisão humana.
+6. Para outlier, a série tratada usa x̂₆ e guarda também x₆, método, janela, horário e indicador de tratamento. Caso contrário, usa o original.
+7. Aplicar sem alteração os limites ALE-5 ao valor bruto e ao tratado. Se qualquer um alcançar gatilho, registrar pré-alerta e priorizar verificação do operador, sem publicação automática.
+8. O operador revisa o caso; o algoritmo não declara erro de sensor nem publica alerta ao cidadão por conta própria.
 
-Antes de implementar em produção, a Defesa Civil deve validar a regra com leituras representativas. Continua sem definição documental o detector/limiar que decide se a leitura atual é outlier e como lacunas/flags de qualidade afetam a janela. Com histórico insuficiente, sinalizar e não aplicar tratamento, como já determina a issue. A leitura original e a prioridade de verificação continuam obrigatórias.
+### Exemplos
+
+- Janela [10, 12, 11, 13, 12]: variações +2, −1, +2, −1; mediana 0,5; projeção 12,5. MADΔ = 1,5; s = 2,2239; limite ≈ 6,6717. Valor atual 40 tem resíduo 27,5, torna-se candidato a outlier e recebe valor tratado 12,5. O original 40 permanece e também é verificado contra ALE-5.
+- Janela [10, 10, 10, 10, 10]: projeção 10, MADΔ = 0 e limite 0. Valor atual 11 é candidato; série tratada usa 10, mas 11 permanece e também é verificado quanto a risco. A revisão humana decide se foi falha ou mudança real.
+
+### Justificativa e limites
+
+A mediana das variações representa tendência recente; MAD é uma medida robusta menos sensível a extremos do que desvio-padrão. A escala 1,4826 e o limite de três escalas seguem o detector robusto de Hampel. Com apenas quatro variações, o resultado é triagem, não prova de erro. Mudanças reais podem parecer anomalias, sobretudo com MADΔ = 0; preservar o bruto, testar ambos os valores contra ALE-5 e exigir revisão reduz o risco de ocultar evento. Referências: [NIST — medidas robustas de dispersão](https://www.itl.nist.gov/div898/handbook/eda/section3/eda356.htm), [NIST — detecção de outliers](https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm), [documentação do filtro de Hampel e fator MAD](https://www.mathworks.com/help/signal/ref/hampel.html).
+
+A fórmula e o detector ficam definidos como padrão provisório do protótipo por autorização do solicitante, revisáveis após exemplos da Defesa Civil. Isso não altera ALE-5 nem dispensa revisão humana. Esta etapa registra a regra, mas não implementa o algoritmo; ALE-29 permanece aberta para desenvolvimento e verificação.
+
 
 ## ALE-24 — divulgação externa
 
@@ -101,8 +115,8 @@ O README atual menciona Open-Meteo, WhatsApp e expansão territorial. O piloto e
 ## Estado das issues e o que falta para fechar a Etapa 1
 
 - **ALE-5 — Done:** conferida, sem mudanças; o solicitante confirmou validação municipal dos critérios. Os documentos aprovados são a fonte de verdade.
-- **ALE-6 — In Progress:** proposta mínima de privacidade e ciclo de vida registrada. Continua aberta até validação do controlador/responsável institucional e aprovação da tabela de temporalidade de logs/backups; fontes reais permanecem desativadas enquanto termos/permissões não forem obtidos.
+- **ALE-6 — In Progress:** política operacional definida para o protótipo: remoção imediata da base ativa, backups até 30 dias, logs técnicos por 30 dias e histórico/auditoria preservados durante a operação. Continua aberta até validação institucional da base legal, aviso/canal de direitos e aceitação da retenção antes de dados reais.
 - **ALE-24 — Done:** decisão do solicitante registrada: download e compartilhamento manual opcional no Instagram, sem publicação automática.
-- **ALE-29 — In Progress:** fórmula pela mediana das variações consecutivas aprovada pelo solicitante; falta validar com a Defesa Civil e definir o detector/limiar antes de implementação em produção.
+- **ALE-29 — In Progress:** fórmula e detector definidos por delegação do solicitante como padrão provisório; implementação/verificação ainda não realizadas. Os limites ALE-5 permanecem intactos.
 
-**Saída necessária para considerar a Etapa 1 fechada:** validar a proposta de privacidade/temporalidade com o responsável institucional e a regra de outlier com a Defesa Civil. Para o protótipo, usar somente dados fictícios/sintéticos. Nenhuma das quatro fontes externas será integrada até existir API/acesso aplicável e condições de uso confirmadas.
+**Saída desta etapa:** políticas de privacidade e outliers estão definidas para o protótipo. Dados reais e conectores só entram após as confirmações institucionais indicadas acima. Usar somente dados fictícios/sintéticos. Nenhuma das quatro fontes externas será integrada até existir API/acesso aplicável e condições de uso confirmadas.
