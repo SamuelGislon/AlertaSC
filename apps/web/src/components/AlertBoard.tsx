@@ -10,11 +10,14 @@ const statusLabels: Record<string, string> = {
 };
 
 const auditLabels: Record<string, string> = {
+  SYNTHETIC_SOURCE_DATA_RECEIVED: 'Dados sintéticos recebidos',
+  SYNTHETIC_DATA_NORMALIZED: 'Leitura sintética normalizada',
   SYNTHETIC_ALERT_GENERATED: 'Alerta sintético gerado',
   ALERT_CLAIMED: 'Alerta assumido para análise',
   ALERT_STATUS_CHANGED: 'Estado do alerta alterado',
   ALERT_EXPIRED: 'Alerta expirado',
   ALERT_CLAIM_RELEASED: 'Análise liberada',
+  SYNTHETIC_DELIVERY_SIMULATED: 'Entrega sintética simulada',
 };
 
 interface AlertBoardProps {
@@ -23,13 +26,14 @@ interface AlertBoardProps {
   onClaim: (alertId: string) => Promise<void>;
   onTransition: (alertId: string, status: ReviewDecision, reason: string) => Promise<string>;
   onLoadAudit: (alertId: string) => Promise<AuditEvent[]>;
+  onSimulateDelivery: (alertId: string) => Promise<{ eligibleCount: number; message: string }>;
   lockError?: string | null;
   canRecover?: boolean;
   onRecover?: (reason: string) => Promise<void>;
 }
 
 export function AlertBoard({
-  lockGranted, alerts, onClaim, onTransition, onLoadAudit,
+  lockGranted, alerts, onClaim, onTransition, onLoadAudit, onSimulateDelivery,
   lockError, canRecover = false, onRecover,
 }: AlertBoardProps) {
   const [statuses, setStatuses] = useState<Record<string, string>>({});
@@ -38,6 +42,7 @@ export function AlertBoard({
   const [error, setError] = useState<string | null>(null);
   const [auditOpen, setAuditOpen] = useState<Record<string, boolean>>({});
   const [auditEvents, setAuditEvents] = useState<Record<string, AuditEvent[]>>({});
+  const [deliveryMessages, setDeliveryMessages] = useState<Record<string, string>>({});
   const [recoveryReason, setRecoveryReason] = useState('');
   const statusOf = (alert: AlertView) => statuses[alert.id] ?? alert.status;
 
@@ -80,6 +85,19 @@ export function AlertBoard({
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a auditoria.');
       }
+    }
+  }
+
+  async function simulateDelivery(alertId: string) {
+    setBusyId(alertId);
+    setError(null);
+    try {
+      const result = await onSimulateDelivery(alertId);
+      setDeliveryMessages((previous) => ({ ...previous, [alertId]: result.message }));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível simular a entrega local.');
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -142,6 +160,16 @@ export function AlertBoard({
               <div><dt className="inline font-semibold">Expira em: </dt><dd className="inline">{new Date(alert.expiresAt).toLocaleString('pt-BR')}</dd></div>
             </dl>
 
+            {alert.relatedReadings.length > 0 && <div className="mt-3 rounded-lg bg-slate-50 p-3">
+              <p className="text-xs font-semibold text-slate-700">Leituras relacionadas (sintéticas)</p>
+              <ul className="mt-1 space-y-1 text-xs text-slate-600">
+                {alert.relatedReadings.map((reading, index) => <li key={`${reading.metric}-${index}`}>
+                  {reading.metric}: {reading.rawValue} {reading.rawUnit} → {reading.normalizedValue} {reading.normalizedUnit}
+                  {' · '}{reading.source}{' · '}{new Date(reading.observedAt).toLocaleString('pt-BR')}
+                </li>)}
+              </ul>
+            </div>}
+
             {status === 'AWAITING_TRIAGE' && <button disabled={busyId === alert.id} onClick={() => void claim(alert)}
               className="mt-4 rounded-lg bg-sky-800 px-4 py-2 font-semibold text-white disabled:opacity-50">Assumir alerta</button>}
             {status === 'IN_ANALYSIS' && <div className="mt-4 space-y-3">
@@ -157,6 +185,14 @@ export function AlertBoard({
                   onClick={() => void decide(alert.id, 'REJECTED')} className="rounded-lg border border-rose-700 px-4 py-2 font-semibold text-rose-900 disabled:opacity-50">Reprovar</button>
               </div>
             </div>}
+            {status === 'APPROVED' && <div className="mt-4 space-y-2">
+              <button disabled={busyId === alert.id} onClick={() => void simulateDelivery(alert.id)}
+                className="rounded-lg border border-sky-800 px-4 py-2 font-semibold text-sky-900 disabled:opacity-50">
+                Simular entrega local
+              </button>
+              <p className="text-xs text-slate-600">Usa apenas cadastros sintéticos ativos e consentidos. Não envia mensagens nem chama serviços externos.</p>
+              {deliveryMessages[alert.id] && <p role="status" className="text-sm text-emerald-900">{deliveryMessages[alert.id]}</p>}
+            </div>}
 
             <div className="mt-4 border-t border-slate-100 pt-3">
               <button onClick={() => void toggleAudit(alert.id)} aria-expanded={auditOpen[alert.id] ?? false}
@@ -168,6 +204,13 @@ export function AlertBoard({
                     {event.previousState || event.newState ? ` · ${statusLabels[event.previousState ?? ''] ?? event.previousState ?? '—'} → ${statusLabels[event.newState ?? ''] ?? event.newState ?? '—'}` : ''}</p>
                   <p className="text-xs text-slate-600">Responsável: {event.actorId ?? 'Sistema'}</p>
                   {event.reason && <p className="mt-1">Motivo: {event.reason}</p>}
+                  {event.metadata && <p className="mt-1 text-xs text-slate-600">{[
+                    event.metadata.source,
+                    event.metadata.metric,
+                    event.metadata.value !== undefined ? `${event.metadata.value} ${event.metadata.unit ?? ''}`.trim() : null,
+                    event.metadata.channel,
+                    event.metadata.count !== undefined ? `Cadastros elegíveis: ${event.metadata.count}` : null,
+                  ].filter((part) => part !== undefined && part !== null).join(' · ')}</p>}
                 </li>)}
                 {auditEvents[alert.id]?.length === 0 && <li className="text-sm text-slate-600">Nenhum evento de auditoria.</li>}
               </ol>}

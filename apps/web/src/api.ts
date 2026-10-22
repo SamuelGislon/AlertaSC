@@ -9,6 +9,17 @@ export interface AlertView {
   generatedAt: string;
   expiresAt: string;
   synthetic: true;
+  relatedReadings: Array<{
+    source: string;
+    metric: string;
+    rawValue: number;
+    rawUnit: string;
+    normalizedValue: number;
+    normalizedUnit: string;
+    observedAt: string;
+    area: string;
+    synthetic: true;
+  }>;
 }
 export type ReviewDecision = 'APPROVED' | 'REJECTED';
 export interface AuditEvent {
@@ -19,6 +30,7 @@ export interface AuditEvent {
   previousState: string | null;
   newState: string | null;
   reason: string | null;
+  metadata?: Record<string, string | number | boolean | null>;
 }
 export interface SyntheticOperator {
   id: string;
@@ -48,16 +60,27 @@ export interface CitizenDemoSession {
 }
 
 let accessToken: string | null = null;
+let refreshInFlight: Promise<string> | null = null;
 const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 
 export function setAccessToken(token: string | null): void { accessToken = token; }
 export function currentAccessToken(): string | null { return accessToken; }
 
-async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function apiRequest<T>(path: string, init: RequestInit = {}, retryAfterRefresh = true): Promise<T> {
   const headers = new Headers(init.headers);
+  const usesOperatorAccessToken = Boolean(accessToken && !headers.has('Authorization'));
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  if (accessToken && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${accessToken}`);
+  if (usesOperatorAccessToken) headers.set('Authorization', `Bearer ${accessToken}`);
   const response = await fetch(`${apiBase}/api/v1${path}`, { ...init, headers, credentials: 'include' });
+  if (response.status === 401 && retryAfterRefresh && usesOperatorAccessToken && !path.startsWith('/auth/')) {
+    try {
+      await api.refresh();
+    } catch {
+      setAccessToken(null);
+      throw new Error('Credenciais inválidas.');
+    }
+    return apiRequest<T>(path, init, false);
+  }
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string } | null;
     throw new Error(body?.message || 'Não foi possível concluir a operação.');
@@ -74,10 +97,16 @@ export const api = {
     setAccessToken(result.accessToken);
     return result.operator;
   },
-  async refresh() {
-    const result = await apiRequest<{ accessToken: string }>('/auth/refresh', { method: 'POST' });
-    setAccessToken(result.accessToken);
-    return result.accessToken;
+  refresh() {
+    if (!refreshInFlight) {
+      refreshInFlight = apiRequest<{ accessToken: string }>('/auth/refresh', { method: 'POST' })
+        .then(({ accessToken: refreshedToken }) => {
+          setAccessToken(refreshedToken);
+          return refreshedToken;
+        })
+        .finally(() => { refreshInFlight = null; });
+    }
+    return refreshInFlight;
   },
   async logout() {
     try { await apiRequest<void>('/auth/logout', { method: 'POST' }); }
@@ -91,6 +120,9 @@ export const api = {
     apiRequest<{ status: string }>(`/alerts/${id}/transition`, {
       method: 'POST', body: JSON.stringify({ status, reason }),
     }),
+  simulateDelivery: (id: string) => apiRequest<{ synthetic: true; simulated: true; eligibleCount: number; message: string }>(
+    `/alerts/${id}/simulate-delivery`, { method: 'POST' },
+  ),
   alertAudit: (id: string) => apiRequest<AuditEvent[]>(`/alerts/${id}/audit`),
   recoverAlertTab: (reason: string) => apiRequest<{ recovered: true }>('/alert-tab/recover', {
     method: 'POST', body: JSON.stringify({ reason }),

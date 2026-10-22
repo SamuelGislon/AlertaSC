@@ -17,6 +17,21 @@ interface AlertRow {
   status: AlertStatus;
   generated_at: Date;
   expires_at: Date;
+  municipality_code: string;
+  event_type: string;
+}
+
+interface AlertObservationRow {
+  alert_id: string;
+  source_label: string;
+  metric_label: string;
+  raw_value: string | number;
+  raw_unit: string;
+  normalized_value: string | number;
+  normalized_unit: string;
+  observed_at: Date;
+  area_label: string;
+  synthetic: boolean;
 }
 
 @Injectable()
@@ -31,17 +46,20 @@ export class AlertService {
     await this.alertTab.assertAccess(principal.sessionId);
     await expireDueAlerts(this.database);
     const rows = await this.database.query(
-      `SELECT id, title, summary, source_label, area_label, status, generated_at, expires_at
+      `SELECT id, title, summary, source_label, area_label, status, generated_at, expires_at,
+              municipality_code, event_type
          FROM alerts WHERE synthetic = true ORDER BY generated_at DESC`,
     ) as AlertRow[];
-    return rows.map((row) => this.toResponse(row));
+    const observations = await this.observationsFor(rows.map((row) => row.id));
+    return rows.map((row) => this.toResponse(row, observations.get(row.id) ?? []));
   }
 
   async get(principal: RequestPrincipal, alertId: string): Promise<Record<string, unknown>> {
     await this.alertTab.assertAccess(principal.sessionId);
     await expireDueAlerts(this.database);
     const row = await this.findAlert(this.database, alertId);
-    return this.toResponse(row);
+    const observations = await this.observationsFor([row.id]);
+    return this.toResponse(row, observations.get(row.id) ?? []);
   }
 
   async auditFor(principal: RequestPrincipal, alertId: string): Promise<Array<Record<string, unknown>>> {
@@ -49,13 +67,67 @@ export class AlertService {
     await this.findAlert(this.database, alertId);
     const events = await this.database.query(
       `SELECT id, actor_id AS "actorId", action, occurred_at AS "occurredAt", previous_state AS "previousState",
-              new_state AS "newState", reason
+              new_state AS "newState", reason, metadata
          FROM audit_events
         WHERE entity_type = 'alert' AND entity_id = $1
         ORDER BY occurred_at ASC, id ASC`,
       [alertId],
     );
     return events;
+  }
+
+  async simulateDelivery(principal: RequestPrincipal, alertId: string) {
+    await this.alertTab.assertAccess(principal.sessionId);
+    const runner = this.database.createQueryRunner();
+    await runner.connect();
+    await runner.startTransaction();
+    try {
+      const rows = await runner.query(
+        'SELECT * FROM alerts WHERE id = $1 AND synthetic = true FOR UPDATE', [alertId],
+      ) as AlertRow[];
+      const alert = rows[0];
+      if (!alert) throw new NotFoundException('alert_not_found');
+      if (new Date(alert.expires_at).getTime() <= Date.now() || alert.status === 'EXPIRED') {
+        await this.expireInsideTransaction(runner, alert);
+        await runner.commitTransaction();
+        throw new ConflictException('alert_expired');
+      }
+      if (alert.status !== 'APPROVED') throw new ConflictException('alert_not_available');
+
+      // Lock eligible preference rows so opt-out and the simulated attempt have a clear
+      // transaction order. Each subsequent attempt runs the query again.
+      const eligible = await runner.query(
+        `SELECT rp.id
+           FROM resident_preferences rp
+           JOIN people p ON p.id = rp.person_id
+          WHERE p.synthetic = true AND rp.active = true AND rp.consented_at IS NOT NULL
+            AND rp.municipality_codes @> ARRAY[$1]::text[]
+            AND rp.event_types @> ARRAY[$2]::text[]
+            AND rp.channels @> ARRAY['telegram']::text[]
+          ORDER BY rp.id FOR UPDATE OF rp`,
+        [alert.municipality_code, alert.event_type],
+      ) as Array<{ id: string }>;
+      const eligibleCount = eligible.length;
+      await this.audit.record({
+        actorId: principal.operatorId,
+        action: 'SYNTHETIC_DELIVERY_SIMULATED',
+        entityType: 'alert',
+        entityId: alert.id,
+        metadata: { synthetic: true, stage: 'delivery_simulated', channel: 'telegram', count: eligibleCount },
+      }, runner);
+      await runner.commitTransaction();
+      return {
+        synthetic: true,
+        simulated: true,
+        eligibleCount,
+        message: `Simulação local concluída para ${eligibleCount} cidadão(s) sintético(s). Nenhuma mensagem foi enviada; nenhuma chamada externa foi feita.`,
+      };
+    } catch (error) {
+      if (runner.isTransactionActive) await runner.rollbackTransaction();
+      throw error;
+    } finally {
+      await runner.release();
+    }
   }
 
   async claim(principal: RequestPrincipal, alertId: string): Promise<{ claimed: true }> {
@@ -180,7 +252,8 @@ export class AlertService {
 
   private async findAlert(manager: Pick<DataSource, 'query'>, alertId: string): Promise<AlertRow> {
     const rows = await manager.query(
-      `SELECT id, title, summary, source_label, area_label, status, generated_at, expires_at
+      `SELECT id, title, summary, source_label, area_label, status, generated_at, expires_at,
+              municipality_code, event_type
          FROM alerts WHERE id = $1 AND synthetic = true`,
       [alertId],
     ) as AlertRow[];
@@ -188,7 +261,26 @@ export class AlertService {
     return rows[0];
   }
 
-  private toResponse(alert: AlertRow): Record<string, unknown> {
+  private async observationsFor(alertIds: string[]): Promise<Map<string, AlertObservationRow[]>> {
+    if (!alertIds.length) return new Map();
+    const rows = await this.database.query(
+      `SELECT alert_id, source_label, metric_label, raw_value, raw_unit,
+              normalized_value, normalized_unit, observed_at, area_label, synthetic
+         FROM alert_observations
+        WHERE alert_id = ANY($1::uuid[])
+        ORDER BY observed_at ASC, id ASC`,
+      [alertIds],
+    ) as AlertObservationRow[];
+    const grouped = new Map<string, AlertObservationRow[]>();
+    for (const row of rows) {
+      const bucket = grouped.get(row.alert_id) ?? [];
+      bucket.push(row);
+      grouped.set(row.alert_id, bucket);
+    }
+    return grouped;
+  }
+
+  private toResponse(alert: AlertRow, observations: AlertObservationRow[] = []): Record<string, unknown> {
     return {
       id: alert.id,
       title: alert.title,
@@ -204,6 +296,17 @@ export class AlertService {
       generatedAt: alert.generated_at,
       expiresAt: alert.expires_at,
       synthetic: true,
+      relatedReadings: observations.map((row) => ({
+        source: row.source_label,
+        metric: row.metric_label,
+        rawValue: Number(row.raw_value),
+        rawUnit: row.raw_unit,
+        normalizedValue: Number(row.normalized_value),
+        normalizedUnit: row.normalized_unit,
+        observedAt: row.observed_at,
+        area: row.area_label,
+        synthetic: row.synthetic,
+      })),
     };
   }
 }

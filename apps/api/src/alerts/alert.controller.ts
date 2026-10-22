@@ -44,4 +44,10 @@ export class AlertController {
   ) {
     return this.alerts.transition(principal, id, body?.status, body?.reason);
   }
+
+  @Post(':id/simulate-delivery')
+  @RequirePermission('ALERT_APPROVE')
+  simulateDelivery(@CurrentPrincipal() principal: AuthenticatedRequest['user'], @Param('id') id: string) {
+    return this.alerts.simulateDelivery(principal, id);
+  }
 }

@@ -13,7 +13,9 @@ export interface AuditRecord {
   metadata?: Record<string, string | number | boolean | null>;
 }
 
-export const NON_SENSITIVE_METADATA_KEYS = new Set(['synthetic', 'transition', 'session_action', 'count']);
+export const NON_SENSITIVE_METADATA_KEYS = new Set([
+  'synthetic', 'transition', 'session_action', 'count', 'stage', 'source', 'metric', 'value', 'unit', 'channel',
+]);
 
 @Injectable()
 export class AuditService {

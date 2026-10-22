@@ -8,6 +8,13 @@ Esta etapa fornece a estrutura inicial do monorepo, o painel, a API NestJS, o wo
 - Docker com suporte a Docker Compose e acesso à imagem `postgis/postgis:16-3.4`.
 - OpenSSL para gerar os segredos locais.
 
+Se `node` e `pnpm` já estiverem instalados pelo `mise` no WSL, mas os comandos não forem encontrados, inclua `~/.local/bin` no `PATH` da sessão e execute os comandos Node com `mise exec node@24 --`. Por exemplo:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+mise exec node@24 -- pnpm --version
+```
+
 No WSL, o Docker Desktop pode ser usado com integração WSL ativada. Se o CLI `docker` não estiver integrado à distribuição, use o executável `docker.exe` disponibilizado pelo Docker Desktop.
 
 ## Preparar configuração local
@@ -38,18 +45,18 @@ Não troque a senha do PostgreSQL depois de criar o volume local, a menos que ta
 ## Iniciar serviços
 
 ```bash
-corepack pnpm install
+mise exec node@24 -- pnpm install
 docker compose up -d db
-corepack pnpm db:migrate
-corepack pnpm db:seed:synthetic
-corepack pnpm dev
+mise exec node@24 -- pnpm db:migrate
+mise exec node@24 -- pnpm db:seed:synthetic
+mise exec node@24 -- pnpm dev
 ```
 
 Se estiver usando o CLI do Docker Desktop pelo WSL sem integração, substitua o segundo comando por `docker.exe compose up -d db`.
 
 O seed cria um operador administrador sintético somente quando ainda não há um administrador ativo. Ele imprime o CPF e a senha sintéticos uma vez no terminal; guarde-os apenas localmente. O seed não grava essas credenciais em logs da aplicação.
 
-Se ainda não existir alerta sintético, o seed também cria um exemplo fictício na fila para validar a tela e a expiração. Ele é identificado como fixture e não representa observação real.
+Se ainda não existir alerta sintético aguardando triagem, o seed cria um exemplo fictício na fila para validar a tela e a expiração. O exemplo inclui uma leitura sintética relacionada (5,2 cm convertidos para 52 mm), com origem e horário identificados; esses valores não representam observação real.
 
 Endereços locais padrão:
 
@@ -72,7 +79,8 @@ Entre com o operador sintético criado pelo seed. A aba de alertas exige que o s
 ### Revisão, auditoria e operadores sintéticos
 
 - Na fila de alertas, a pessoa operadora pode assumir o alerta e, em seguida, aprovar ou reprovar com justificativa. A API valida as permissões, a posse do alerta e as transições; a interface não envia nem publica o conteúdo.
-- Cada alerta mostra origem sintética, área, horários, resumo e a incerteza de não haver observação real ou validação por fonte nesta etapa. O histórico de auditoria pode ser consultado dentro da fila.
+- Cada alerta mostra origem sintética, área, horários, resumo, leituras relacionadas e a incerteza de não haver observação real ou validação por fonte nesta etapa. A trilha diferencia entrada bruta, normalização, revisão e entrega simulada.
+- Para alertas aprovados, **Simular entrega local** conta cadastros sintéticos ativos, consentidos e elegíveis. Cada tentativa reconsulta as preferências; a remoção bloqueia tentativas posteriores. A tela e a API deixam claro que nenhuma mensagem é enviada e nenhum serviço externo é chamado.
 - Se um bloqueio órfão impedir o acesso, somente um administrador pode fazer a recuperação manual, informando justificativa. O sistema registra o evento de recuperação.
 - A aba **Operadores sintéticos** permite que um administrador provisione uma conta fictícia e desative contas sintéticas. As credenciais de provisionamento aparecem uma vez na interface e não são registradas nos logs. Nunca use essa função para criar uma conta real nesta fase.
 - A aba **Cadastros sintéticos** é uma ferramenta administrativa de demonstração; o portal do cidadão representa o cadastro voluntário, edição de preferências, consentimento e remoção, apenas com dados fictícios.
@@ -88,10 +96,10 @@ O banco local atende os fluxos atuais. Armazenamento S3 fica para a etapa que pr
 ## Verificações
 
 ```bash
-corepack pnpm typecheck
-corepack pnpm build
-corepack pnpm test:unit
-corepack pnpm test:integration
+mise exec node@24 -- pnpm typecheck
+mise exec node@24 -- pnpm build
+mise exec node@24 -- pnpm test:unit
+mise exec node@24 -- pnpm test:integration
 ```
 
 Os testes de integração usam o banco `alertasc_test` e recusam truncar outro banco. Não execute-os contra `alertasc_dev`.

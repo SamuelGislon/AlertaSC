@@ -14,6 +14,7 @@ const alert: AlertView = {
   generatedAt: '2026-10-21T12:00:00.000Z',
   expiresAt: '2026-10-22T12:00:00.000Z',
   synthetic: true,
+  relatedReadings: [],
 };
 
 const history: AuditEvent[] = [{
@@ -24,12 +25,17 @@ const history: AuditEvent[] = [{
   previousState: null,
   newState: 'AWAITING_TRIAGE',
   reason: null,
+  metadata: {},
 }];
 
 const callbacks = () => ({
   onClaim: vi.fn().mockResolvedValue(undefined),
   onTransition: vi.fn().mockResolvedValue('APPROVED'),
   onLoadAudit: vi.fn().mockResolvedValue(history),
+  onSimulateDelivery: vi.fn().mockResolvedValue({
+    eligibleCount: 1,
+    message: 'Simulação concluída para 1 cidadão sintético. Nenhuma mensagem foi enviada.',
+  }),
 });
 
 describe('AlertBoard review workflow', () => {
@@ -47,6 +53,27 @@ describe('AlertBoard review workflow', () => {
     expect(screen.getByText(/Gerado em/)).toBeDefined();
     expect(screen.getByText(/Incerteza: conteúdo sintético/)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Assumir alerta' })).toBeDefined();
+  });
+
+  it('shows related synthetic readings with their original and normalized units', () => {
+    const alertWithReading = {
+      ...alert,
+      relatedReadings: [{
+        source: 'Fixture local — estação fictícia PG-01',
+        metric: 'Precipitação acumulada em 1 hora',
+        rawValue: 5.2,
+        rawUnit: 'cm',
+        normalizedValue: 52,
+        normalizedUnit: 'mm',
+        observedAt: '2026-10-21T12:00:00.000Z',
+        area: 'Presidente Getúlio/SC',
+        synthetic: true as const,
+      }],
+    };
+    render(<AlertBoard lockGranted alerts={[alertWithReading]} {...callbacks()} />);
+    expect(screen.getByText('Leituras relacionadas (sintéticas)')).toBeDefined();
+    expect(screen.getByText(/5.2 cm → 52 mm/)).toBeDefined();
+    expect(screen.getByText(/Fixture local — estação fictícia PG-01/)).toBeDefined();
   });
 
   it('requires an assigned operator claim and an explicit reason before approving', async () => {
@@ -70,12 +97,29 @@ describe('AlertBoard review workflow', () => {
   it('loads the immutable audit history for an alert on demand', async () => {
     const user = userEvent.setup();
     const actions = callbacks();
+    actions.onLoadAudit.mockResolvedValue([
+      {
+        ...history[0]!, action: 'SYNTHETIC_SOURCE_DATA_RECEIVED',
+        metadata: { synthetic: true, stage: 'raw', source: 'Fixture local', metric: 'Precipitação', value: 5.2, unit: 'cm' },
+      },
+    ]);
     render(<AlertBoard lockGranted alerts={[alert]} {...actions} />);
 
     await user.click(screen.getByRole('button', { name: 'Histórico da auditoria' }));
     await waitFor(() => expect(actions.onLoadAudit).toHaveBeenCalledWith(alert.id));
-    expect(await screen.findByText('ALERT_CREATED')).toBeDefined();
-    expect(screen.getByText('Aguardando Triagem')).toBeDefined();
+    expect(await screen.findByText('Dados sintéticos recebidos')).toBeDefined();
+    expect(screen.getByText(/Precipitação · 5.2 cm/)).toBeDefined();
+  });
+
+  it('simulates a local delivery only for approved alerts and clearly confirms no message was sent', async () => {
+    const user = userEvent.setup();
+    const actions = callbacks();
+    const approved = { ...alert, status: 'APPROVED' };
+    render(<AlertBoard lockGranted alerts={[approved]} {...actions} />);
+
+    await user.click(screen.getByRole('button', { name: 'Simular entrega local' }));
+    await waitFor(() => expect(actions.onSimulateDelivery).toHaveBeenCalledWith(approved.id));
+    expect(await screen.findByText(/Nenhuma mensagem foi enviada/)).toBeDefined();
   });
 
   it('allows only an administrator with an occupied-tab error to submit an audited recovery reason', async () => {

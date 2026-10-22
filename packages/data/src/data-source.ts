@@ -1,6 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
 import { InitialSchema1792540800000 } from './migrations/InitialSchema202610210001.js';
 import { AddSyntheticCitizenAccess1792540800001 } from './migrations/AddSyntheticCitizenAccess1792540800001.js';
+import { AddSyntheticAlertEvidence1792540800002 } from './migrations/AddSyntheticAlertEvidence1792540800002.js';
 
 export function createDataSourceOptions(env: NodeJS.ProcessEnv): DataSourceOptions {
   const url = env.NODE_ENV === 'production'
@@ -14,7 +15,7 @@ export function createDataSourceOptions(env: NodeJS.ProcessEnv): DataSourceOptio
     type: 'postgres',
     url,
     entities: [],
-    migrations: [InitialSchema1792540800000, AddSyntheticCitizenAccess1792540800001],
+    migrations: [InitialSchema1792540800000, AddSyntheticCitizenAccess1792540800001, AddSyntheticAlertEvidence1792540800002],
     migrationsTableName: 'typeorm_migrations',
     synchronize: false,
     migrationsRun: false,

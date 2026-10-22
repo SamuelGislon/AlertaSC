@@ -125,6 +125,7 @@ export function App() {
             return result.status;
           }}
           onLoadAudit={api.alertAudit}
+          onSimulateDelivery={async (alertId) => api.simulateDelivery(alertId)}
         />
       </> : page === 'citizens' ? <SyntheticCitizens /> : <OperatorManagement />}
     </div>

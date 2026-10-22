@@ -1,11 +1,11 @@
 import 'reflect-metadata';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { createDataSourceOptions } from '@alertasc/data';
 import { createApiApplication } from '../src/bootstrap.js';
 import { AppModule } from '../src/app.module.js';
-import { resetSyntheticTestDatabase, seedSyntheticFixtures } from '../src/testing/fixtures.js';
+import { ensureSyntheticReviewAlert, resetSyntheticTestDatabase, seedSyntheticFixtures } from '../src/testing/fixtures.js';
 
 function resolveTestDatabaseUrl(): string {
   if (process.env.DATABASE_TEST_URL) return process.env.DATABASE_TEST_URL;
@@ -69,6 +69,19 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect((await request(app.getHttpServer()).get('/ready')).body.database).toBe('ready');
   });
 
+  it('keeps terminal alert history and ensures one actionable synthetic demo alert', async () => {
+    await database.query("UPDATE alerts SET status = 'APPROVED' WHERE id = $1", [fixtures.alertId]);
+
+    expect(await ensureSyntheticReviewAlert(database)).toBe(true);
+    expect(await ensureSyntheticReviewAlert(database)).toBe(false);
+
+    const alerts = await database.query('SELECT id, status FROM alerts ORDER BY generated_at');
+    expect(alerts).toHaveLength(2);
+    expect(alerts.map((alert: { status: string }) => alert.status)).toEqual(['APPROVED', 'AWAITING_TRIAGE']);
+    const history = await database.query("SELECT action FROM audit_events WHERE entity_id = $1", [fixtures.alertId]);
+    expect(history).toContainEqual(expect.objectContaining({ action: 'SYNTHETIC_ALERT_GENERATED' }));
+  });
+
   it('authenticates synthetic operators and never reveals credentials on failure', async () => {
     const valid = await login();
     expect(valid.accessToken).toEqual(expect.any(String));
@@ -129,6 +142,8 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect(acquisitions.map(({ status }) => status).sort()).toEqual([201, 409]);
 
     const winnerIndex = acquisitions.findIndex(({ status }) => status === 201);
+    const losingResponse = acquisitions[1 - winnerIndex]!;
+    expect(losingResponse.body.message).toContain('aba de alertas está em uso');
     const winningToken = winnerIndex === 0 ? admin.accessToken : secondOperator.accessToken;
     const losingToken = winnerIndex === 0 ? secondOperator.accessToken : admin.accessToken;
     await request(app.getHttpServer()).get('/api/v1/alerts')
@@ -198,6 +213,34 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect(JSON.stringify(list.body)).not.toMatch(/cpf|phone|address|password|hash/i);
   });
 
+  it('allows an admin to recover a synthetic operator account and revokes its previous sessions', async () => {
+    const [admin, operator] = await Promise.all([login(fixtures.admin), login(fixtures.operator)]);
+    await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.operator.id}/password`)
+      .set('Authorization', `Bearer ${operator.accessToken}`)
+      .send({ password: 'temporary-synthetic-access-recovery' })
+      .expect(403);
+
+    const reset = await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.operator.id}/password`)
+      .set('Authorization', `Bearer ${admin.accessToken}`)
+      .send({ password: 'temporary-synthetic-access-recovery' })
+      .expect(200);
+    expect(reset.body).toEqual({ reset: true });
+    expect(JSON.stringify(reset.body)).not.toContain('temporary-synthetic-access-recovery');
+
+    await request(app.getHttpServer()).get('/api/v1/auth/me')
+      .set('Authorization', `Bearer ${operator.accessToken}`).expect(401);
+    await request(app.getHttpServer()).post('/api/v1/auth/login')
+      .send({ cpf: fixtures.operator.cpf, password: fixtures.operator.password }).expect(401);
+    await request(app.getHttpServer()).post('/api/v1/auth/login')
+      .send({ cpf: fixtures.operator.cpf, password: 'temporary-synthetic-access-recovery' }).expect(201);
+
+    const audit = await database.query(
+      "SELECT action FROM audit_events WHERE entity_type = 'operator_account' AND entity_id = $1",
+      [fixtures.operator.id],
+    );
+    expect(audit).toContainEqual(expect.objectContaining({ action: 'OPERATOR_PASSWORD_RESET' }));
+  });
+
   it('revokes disabled synthetic operator sessions and prevents an admin from disabling its own account', async () => {
     const [admin, operator] = await Promise.all([login(fixtures.admin), login(fixtures.operator)]);
     await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.admin.id}/disable`)
@@ -225,9 +268,75 @@ describe('AlertaSC API with PostgreSQL', () => {
     const history = await request(app.getHttpServer()).get(`/api/v1/alerts/${fixtures.alertId}/audit`)
       .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
     expect(history.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'SYNTHETIC_SOURCE_DATA_RECEIVED' }),
+      expect.objectContaining({ action: 'SYNTHETIC_DATA_NORMALIZED' }),
       expect.objectContaining({ action: 'SYNTHETIC_ALERT_GENERATED', newState: 'AWAITING_TRIAGE' }),
     ]));
+    expect(history.body.slice(0, 3).map((event: { action: string }) => event.action)).toEqual([
+      'SYNTHETIC_SOURCE_DATA_RECEIVED', 'SYNTHETIC_DATA_NORMALIZED', 'SYNTHETIC_ALERT_GENERATED',
+    ]);
     expect(JSON.stringify(history.body)).not.toMatch(/cpf|phone|address|latitude|longitude|token|password/i);
+
+    const detail = await request(app.getHttpServer()).get(`/api/v1/alerts/${fixtures.alertId}`)
+      .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
+    expect(detail.body.relatedReadings).toEqual([
+      expect.objectContaining({
+        source: 'Fixture local — estação fictícia PG-01',
+        metric: 'Precipitação acumulada em 1 hora',
+        rawValue: 5.2,
+        rawUnit: 'cm',
+        normalizedValue: 52,
+        normalizedUnit: 'mm',
+        synthetic: true,
+      }),
+    ]);
+  });
+
+  it('simulates delivery only after approval and rechecks opt-out on every attempt', async () => {
+    const externalFetch = vi.spyOn(globalThis, 'fetch');
+    try {
+      const session = await login();
+      const citizen = await request(app.getHttpServer()).post('/api/v1/admin/citizens/fixtures')
+        .set('Authorization', `Bearer ${session.accessToken}`)
+        .send({ fixtureKey: 'resident-pg-01' }).expect(201);
+
+      await request(app.getHttpServer()).post(`/api/v1/alerts/${fixtures.alertId}/simulate-delivery`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(403);
+      await request(app.getHttpServer()).post('/api/v1/alert-tab/acquire')
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(201);
+      await request(app.getHttpServer()).post(`/api/v1/alerts/${fixtures.alertId}/simulate-delivery`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(409);
+      await request(app.getHttpServer()).post(`/api/v1/alerts/${fixtures.alertId}/claim`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(201);
+      await request(app.getHttpServer()).post(`/api/v1/alerts/${fixtures.alertId}/transition`)
+        .set('Authorization', `Bearer ${session.accessToken}`)
+        .send({ status: 'APPROVED', reason: 'Aprovação sintética para validar entrega local.' }).expect(201);
+
+      const firstAttempt = await request(app.getHttpServer())
+        .post(`/api/v1/alerts/${fixtures.alertId}/simulate-delivery`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(201);
+      expect(firstAttempt.body).toEqual(expect.objectContaining({ synthetic: true, simulated: true, eligibleCount: 1 }));
+      expect(firstAttempt.body.message).toContain('nenhuma chamada externa');
+
+      await request(app.getHttpServer()).delete(`/api/v1/admin/citizens/${citizen.body.id}`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(204);
+      const retryAfterOptOut = await request(app.getHttpServer())
+        .post(`/api/v1/alerts/${fixtures.alertId}/simulate-delivery`)
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(201);
+      expect(retryAfterOptOut.body.eligibleCount).toBe(0);
+      expect(externalFetch).not.toHaveBeenCalled();
+
+      const history = await database.query(
+        `SELECT action, metadata FROM audit_events WHERE entity_type = 'alert' AND entity_id = $1 ORDER BY occurred_at`,
+        [fixtures.alertId],
+      );
+      const attempts = history.filter((event: { action: string }) => event.action === 'SYNTHETIC_DELIVERY_SIMULATED');
+      expect(attempts).toHaveLength(2);
+      expect(attempts.map((event: { metadata: { count: number } }) => event.metadata.count)).toEqual([1, 0]);
+      expect(JSON.stringify(history)).not.toContain(citizen.body.id);
+    } finally {
+      externalFetch.mockRestore();
+    }
   });
 
   it('records alert transitions and expiration without deleting audit history', async () => {
@@ -255,6 +364,11 @@ describe('AlertaSC API with PostgreSQL', () => {
       .set('Authorization', `Bearer ${session.accessToken}`)
       .expect(200)
       .expect(({ body }) => expect(body.status).toBe('EXPIRED'));
+    await request(app.getHttpServer()).post(`/api/v1/alerts/${fixtures.alertId}/transition`)
+      .set('Authorization', `Bearer ${session.accessToken}`)
+      .send({ status: 'REJECTED', reason: 'Não agir após expiração.' })
+      .expect(409)
+      .expect(({ body }) => expect(body.message).toContain('expirou'));
 
     const history = await database.query('SELECT action FROM audit_events WHERE entity_id = $1 ORDER BY occurred_at', [fixtures.alertId]);
     expect(history.map((event: { action: string }) => event.action)).toEqual(expect.arrayContaining([
@@ -297,6 +411,11 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect(reconciliation[0].count).toBeGreaterThan(0);
     const marker = await database.query('SELECT expires_at <= created_at + interval \'30 days\' AS within_policy FROM deletion_reconciliation');
     expect(marker[0].within_policy).toBe(true);
+    const citizenAudit = await database.query(
+      "SELECT count(*)::int AS count FROM audit_events WHERE entity_type = 'citizen_registration' AND entity_id = $1",
+      [personId],
+    );
+    expect(citizenAudit[0].count).toBe(0);
   });
 
   it('lets a synthetic citizen change preferences and remove their own registration', async () => {
