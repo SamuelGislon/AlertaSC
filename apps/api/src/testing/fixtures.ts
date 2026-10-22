@@ -68,9 +68,30 @@ export async function createSyntheticAccount(database: DataSource, roles: string
 }
 
 export async function createFirstSyntheticAdministrator(database: DataSource): Promise<SyntheticAccountFixture | null> {
-  const existing = await database.query("SELECT id FROM operator_accounts WHERE roles @> ARRAY['ADMIN']::text[] AND active = true LIMIT 1");
-  if (existing.length) return null;
-  return createSyntheticAccount(database, ['ADMIN']);
+  const existing = await database.query(
+    "SELECT id FROM operator_accounts WHERE roles @> ARRAY['ADMIN']::text[] AND active = true LIMIT 1",
+  );
+  if (existing.length) {
+    const audit = await database.query(
+      "SELECT id FROM audit_events WHERE entity_type = 'operator_account' AND entity_id = $1 AND action = 'SYNTHETIC_OPERATOR_PROVISIONED' LIMIT 1",
+      [existing[0].id],
+    );
+    if (!audit.length) {
+      await database.query(
+        `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, metadata)
+         VALUES ($1, NULL, 'SYNTHETIC_OPERATOR_PROVISIONED', 'operator_account', $2, '{"synthetic":true,"role":"ADMIN"}'::jsonb)`,
+        [randomUUID(), existing[0].id],
+      );
+    }
+    return null;
+  }
+  const administrator = await createSyntheticAccount(database, ['ADMIN']);
+  await database.query(
+    `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, metadata)
+     VALUES ($1, NULL, 'SYNTHETIC_OPERATOR_PROVISIONED', 'operator_account', $2, '{"synthetic":true,"role":"ADMIN"}'::jsonb)`,
+    [randomUUID(), administrator.id],
+  );
+  return administrator;
 }
 
 export async function ensureSyntheticReviewAlert(database: DataSource): Promise<boolean> {

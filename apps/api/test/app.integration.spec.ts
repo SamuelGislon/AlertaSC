@@ -205,6 +205,15 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect(stored[0].synthetic).toBe(true);
     expect(stored[0].password_hash).not.toBe(created.body.oneTimeCredentials.password);
 
+    const provisioningAudit = await database.query(
+      "SELECT action, metadata FROM audit_events WHERE entity_type = 'operator_account' AND entity_id = $1",
+      [created.body.id],
+    );
+    expect(provisioningAudit).toContainEqual(expect.objectContaining({
+      action: 'SYNTHETIC_OPERATOR_PROVISIONED',
+      metadata: { synthetic: true, role: 'OPERATOR' },
+    }));
+
     const list = await request(app.getHttpServer()).get('/api/v1/admin/operators')
       .set('Authorization', `Bearer ${admin.accessToken}`).expect(200);
     expect(list.body).toEqual(expect.arrayContaining([

@@ -48,7 +48,7 @@ export class AdminService {
         action: 'SYNTHETIC_OPERATOR_PROVISIONED',
         entityType: 'operator_account',
         entityId: operatorId,
-        metadata: { synthetic: true },
+        metadata: { synthetic: true, role: 'OPERATOR' },
       }, runner);
       await runner.commitTransaction();
     } catch (error) {

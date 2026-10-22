@@ -14,7 +14,7 @@ export interface AuditRecord {
 }
 
 export const NON_SENSITIVE_METADATA_KEYS = new Set([
-  'synthetic', 'transition', 'session_action', 'count', 'stage', 'source', 'metric', 'value', 'unit', 'channel',
+  'synthetic', 'transition', 'session_action', 'count', 'stage', 'source', 'metric', 'value', 'unit', 'channel', 'role',
 ]);
 
 @Injectable()
