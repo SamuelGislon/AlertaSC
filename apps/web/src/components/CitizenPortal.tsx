@@ -1,4 +1,16 @@
 import { useState } from 'react';
+import { Activity, ArrowLeft, CircleCheck, Trash } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog.js';
+import { Button } from '@/components/ui/button.js';
+import { Card } from '@/components/ui/card.js';
+import { Checkbox } from '@/components/ui/checkbox.js';
+import { Field, FieldLabel, FieldLegend, FieldSet } from '@/components/ui/field.js';
+import { notifySuccess } from '@/components/ui/toast.js';
 import { api, type CitizenPreferences } from '../api.js';
 
 interface CitizenPortalProps {
@@ -16,6 +28,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
+  const [confirmRemoval, setConfirmRemoval] = useState(false);
 
   async function beginDemo() {
     if (!consentGiven) return;
@@ -26,6 +39,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
       setToken(session.accessToken);
       setProfile(preferences);
       setMessage('Perfil de demonstração criado. Ele contém somente dados sintéticos.');
+      notifySuccess('Cadastro sintético iniciado');
     } catch {
       setMessage('Não foi possível iniciar a demonstração.');
     } finally {
@@ -39,6 +53,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
     try {
       setProfile(await api.updateCitizenPreferences(token, profile));
       setMessage('Preferências atualizadas.');
+      notifySuccess('Preferências salvas');
     } catch {
       setMessage('Não foi possível atualizar as preferências.');
     } finally {
@@ -55,6 +70,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
       setProfile(null);
       setConsentGiven(false);
       setMessage('Cadastro removido da base ativa.');
+      notifySuccess('Cadastro removido');
     } catch {
       setMessage('Não foi possível remover o cadastro.');
     } finally {
@@ -82,56 +98,81 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
     setProfile({ ...profile, channels });
   }
 
-  return <section className="citizen-portal-card surface-card card-padding" aria-labelledby="citizen-portal-title">
-      <div className="notice notice-warn">
-        <span className="notice-icon" aria-hidden="true">i</span>
-        <div>
-        Demonstração local: use somente dados sintéticos. O cadastro de pessoas reais está desativado até a validação institucional.
-        </div>
-      </div>
+  return <Card role="region" className="citizen-portal-card surface-card card-padding" aria-labelledby="citizen-portal-title">
+    <Alert role="note" className="notice notice-warn">
+      <Activity className="notice-icon" aria-hidden="true" />
       <div>
-        <h1 id="citizen-portal-title" className="text-2xl font-bold">Portal do cidadão</h1>
-        <p className="mt-1 text-sm text-slate-600">Presidente Getúlio/SC · ambiente de demonstração</p>
+        <AlertTitle>Demonstração local</AlertTitle>
+        <AlertDescription>Use somente dados sintéticos. O cadastro de pessoas reais está desativado até a validação institucional.</AlertDescription>
       </div>
+    </Alert>
+    <div>
+      <h1 id="citizen-portal-title" className="text-2xl font-bold">Portal do cidadão</h1>
+      <p className="mt-1 text-sm text-slate-600">Presidente Getúlio/SC · ambiente de demonstração</p>
+    </div>
 
-      {!profile ? <div className="space-y-3">
-        <label className="flex items-start gap-2 text-sm">
-          <input type="checkbox" checked={consentGiven} onChange={(event) => setConsentGiven(event.target.checked)} />
-          <span>Concordo em criar um cadastro somente para esta demonstração sintética. Isso não ativa comunicações reais.</span>
-        </label>
-        <button disabled={loading || !consentGiven} onClick={() => void beginDemo()} className="rounded-lg bg-sky-800 px-4 py-2 font-semibold text-white disabled:opacity-50">
-          Iniciar cadastro de demonstração
-        </button>
-      </div> : <div className="space-y-4">
-        <p className="text-sm">Cadastro sintético ativo. Consentimento de demonstração registrado.</p>
-        <fieldset className="space-y-2">
-          <legend className="font-semibold">Município</legend>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={profile.municipalities.includes('4214001')} onChange={toggleMunicipality} />
-            Presidente Getúlio/SC
-          </label>
-        </fieldset>
-        <fieldset className="space-y-2">
-          <legend className="font-semibold">Tipos de alerta</legend>
-          {Object.entries(eventLabels).map(([value, label]) => <label key={value} className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={profile.eventTypes.includes(value)} onChange={() => toggleEventType(value)} />
-            {label}
-          </label>)}
-        </fieldset>
-        <fieldset className="space-y-2">
-          <legend className="font-semibold">Canal de demonstração</legend>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={profile.channels.includes('telegram')} onChange={toggleTelegram} />
-            Telegram sintético (sem envio real)
-          </label>
-        </fieldset>
-        <div className="flex flex-wrap gap-3">
-          <button disabled={loading} onClick={() => void savePreferences()} className="rounded-lg bg-sky-800 px-4 py-2 font-semibold text-white">Salvar preferências</button>
-          <button disabled={loading} onClick={() => void removeRegistration()} className="rounded-lg border border-slate-300 px-4 py-2">Remover cadastro</button>
-        </div>
-      </div>}
+    {!profile ? <div className="space-y-3">
+      <Field orientation="horizontal" className="items-start text-sm">
+        <Checkbox id="citizen-demo-consent" checked={consentGiven} onCheckedChange={(checked) => setConsentGiven(checked === true)} />
+        <FieldLabel htmlFor="citizen-demo-consent" className="items-start font-normal">
+          Concordo em criar um cadastro somente para esta demonstração sintética. Isso não ativa comunicações reais.
+        </FieldLabel>
+      </Field>
+      <Button disabled={loading || !consentGiven} onClick={() => void beginDemo()} className="button button-primary">
+        Iniciar cadastro de demonstração
+      </Button>
+    </div> : <div className="space-y-4">
+      <p className="text-sm">Cadastro sintético ativo. Consentimento de demonstração registrado.</p>
+      <FieldSet className="space-y-2">
+        <FieldLegend variant="label">Município</FieldLegend>
+        <Field orientation="horizontal" className="items-center text-sm">
+          <Checkbox id="citizen-municipality" checked={profile.municipalities.includes('4214001')} onCheckedChange={toggleMunicipality} />
+          <FieldLabel htmlFor="citizen-municipality" className="font-normal">Presidente Getúlio/SC</FieldLabel>
+        </Field>
+      </FieldSet>
+      <FieldSet className="space-y-2">
+        <FieldLegend variant="label">Tipos de alerta</FieldLegend>
+        {Object.entries(eventLabels).map(([value, label]) => <Field key={value} orientation="horizontal" className="items-center text-sm">
+          <Checkbox id={`citizen-event-${value}`} checked={profile.eventTypes.includes(value)} onCheckedChange={() => toggleEventType(value)} />
+          <FieldLabel htmlFor={`citizen-event-${value}`} className="font-normal">{label}</FieldLabel>
+        </Field>)}
+      </FieldSet>
+      <FieldSet className="space-y-2">
+        <FieldLegend variant="label">Canal de demonstração</FieldLegend>
+        <Field orientation="horizontal" className="items-center text-sm">
+          <Checkbox id="citizen-telegram" checked={profile.channels.includes('telegram')} onCheckedChange={toggleTelegram} />
+          <FieldLabel htmlFor="citizen-telegram" className="font-normal">Telegram sintético (sem envio real)</FieldLabel>
+        </Field>
+      </FieldSet>
+      <div className="flex flex-wrap gap-3">
+        <Button disabled={loading} onClick={() => void savePreferences()} className="button button-primary">Salvar preferências</Button>
+        <AlertDialog open={confirmRemoval} onOpenChange={setConfirmRemoval}>
+          <AlertDialogTrigger render={<Button type="button" variant="destructive" className="button button-danger" disabled={loading} />}>
+            <Trash size={16} aria-hidden="true" /> Remover cadastro
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover cadastro?</AlertDialogTitle>
+              <AlertDialogDescription>O cadastro sintético será removido da base ativa e deixará de ser elegível para futuros envios simulados.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" className="button button-danger" disabled={loading}
+                onClick={() => { setConfirmRemoval(false); void removeRegistration(); }}>
+                Confirmar remoção
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>}
 
-      {message && <p role="status" className="text-sm">{message}</p>}
-      <button onClick={onBackToLogin} className="button button-quiet citizen-back-button">Voltar ao painel público</button>
-  </section>;
+    {message && <Alert role="status" className={message.startsWith('Não foi') ? 'notice notice-error' : 'notice notice-success'}>
+      {message.startsWith('Não foi') ? <Activity className="notice-icon" aria-hidden="true" /> : <CircleCheck className="notice-icon" aria-hidden="true" />}
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>}
+    <Button type="button" variant="ghost" onClick={onBackToLogin} className="button button-quiet citizen-back-button">
+      <ArrowLeft size={16} aria-hidden="true" />Voltar ao painel público
+    </Button>
+  </Card>;
 }

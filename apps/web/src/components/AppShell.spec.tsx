@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { House, MessageCircle, UserRound } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import { AppShell, type ShellNavigationItem } from './AppShell.js';
 
 const navigation: ShellNavigationItem[] = [
-  { id: 'public', label: 'Início', icon: '⌂' },
-  { id: 'citizen', label: 'Cadastro', icon: '○' },
-  { id: 'feedback', label: 'Retorno', icon: '♡' },
+  { id: 'public', label: 'Início', icon: House },
+  { id: 'citizen', label: 'Cadastro', icon: UserRound },
+  { id: 'feedback', label: 'Retorno', icon: MessageCircle },
 ];
 
 describe('AppShell', () => {
@@ -21,6 +22,9 @@ describe('AppShell', () => {
     expect(screen.getAllByRole('button', { name: /Cadastro/ })).toHaveLength(2);
     expect(screen.getByText('Dados sintéticos')).toBeDefined();
     expect(screen.queryByText(/Defesa Civil|Prefeitura/)).toBeNull();
+    const decorativeIcons = document.querySelectorAll('.nav-icon[aria-hidden="true"]');
+    expect(decorativeIcons.length).toBe(6);
+    expect(document.body.textContent).not.toMatch(/[⌂○♡◆▥◷]/u);
   });
 
   it('marks the current destination and sends navigation actions to the app shell', async () => {

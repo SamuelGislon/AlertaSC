@@ -43,7 +43,7 @@ test('moves between public, synthetic citizen, feedback and operator sign-in vie
 
   await page.getByRole('button', { name: 'Preferências de avisos' }).click();
   await expect(page.getByRole('heading', { name: 'Portal do cidadão' })).toBeVisible();
-  await expect(page.getByLabel(/Concordo em criar um cadastro somente para esta demonstração sintética/)).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: /Concordo em criar um cadastro somente para esta demonstração sintética/ })).toBeVisible();
   await expect(page.getByRole('textbox')).toHaveCount(0);
   await page.getByRole('button', { name: 'Voltar ao painel público' }).click();
 
@@ -135,8 +135,17 @@ test('keeps the authenticated operator shell and its synthetic screens responsiv
       const width = await page.evaluate(() => ({
         documentWidth: document.documentElement.scrollWidth,
         visibleWidth: document.documentElement.clientWidth,
+        overflowingElements: Array.from(document.querySelectorAll<HTMLElement>('*'))
+          .map((element) => ({
+            tag: element.tagName,
+            className: typeof element.className === 'string' ? element.className : '',
+            text: element.innerText?.slice(0, 60),
+            right: Math.round(element.getBoundingClientRect().right),
+          }))
+          .filter((element) => element.right > document.documentElement.clientWidth + 1)
+          .slice(0, 5),
       }));
-      expect(width.documentWidth).toBeLessThanOrEqual(width.visibleWidth);
+      expect(width.documentWidth, JSON.stringify(width.overflowingElements)).toBeLessThanOrEqual(width.visibleWidth);
     }
   }
 });

@@ -117,7 +117,10 @@ describe('AlertBoard review workflow', () => {
     const approved = { ...alert, status: 'APPROVED' };
     render(<AlertBoard lockGranted alerts={[approved]} {...actions} />);
 
-    await user.click(screen.getByRole('button', { name: 'Simular entrega local' }));
+    const menuTrigger = screen.getByRole('button', { name: 'Mais ações do comunicado' });
+    menuTrigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await user.click(screen.getByRole('menuitem', { name: 'Simular entrega local' }));
     await waitFor(() => expect(actions.onSimulateDelivery).toHaveBeenCalledWith(approved.id));
     expect(await screen.findByText(/Nenhuma mensagem foi enviada/)).toBeDefined();
   });
@@ -128,11 +131,21 @@ describe('AlertBoard review workflow', () => {
     const approved = { ...alert, status: 'APPROVED', expiresAt: '2099-10-22T12:00:00.000Z' };
     render(<AlertBoard lockGranted alerts={[approved]} {...callbacks()} onExportPoster={onExportPoster} />);
 
-    await user.click(screen.getByText('Pré-visualizar arte do comunicado'));
+    const previewButton = screen.getByRole('button', { name: 'Pré-visualizar arte do comunicado' });
+    await user.click(previewButton);
+    expect(screen.getByRole('dialog', { name: /Pré-visualização do comunicado/ })).toBeDefined();
     expect(screen.getByRole('img', { name: 'Prévia do comunicado sintético aprovado' })).toBeDefined();
-    await user.click(screen.getByRole('button', { name: 'Baixar comunicado em PNG' }));
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(previewButton).toHaveFocus();
+    const menuTrigger = screen.getByRole('button', { name: 'Mais ações do comunicado' });
+    menuTrigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await user.click(screen.getByRole('menuitem', { name: 'Baixar comunicado em PNG' }));
     await waitFor(() => expect(onExportPoster).toHaveBeenCalledWith(approved, 'png'));
-    await user.click(screen.getByRole('button', { name: 'Baixar comunicado em JPEG' }));
+    menuTrigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await user.click(screen.getByRole('menuitem', { name: 'Baixar comunicado em JPEG' }));
     await waitFor(() => expect(onExportPoster).toHaveBeenCalledWith(approved, 'jpeg'));
   });
 
@@ -161,7 +174,10 @@ describe('AlertBoard review workflow', () => {
     const approved = { ...alert, status: 'APPROVED', expiresAt: '2099-10-22T12:00:00.000Z' };
     render(<AlertBoard lockGranted alerts={[approved]} {...callbacks()} onSharePoster={onSharePoster} />);
 
-    await user.click(screen.getByRole('button', { name: 'Compartilhar manualmente' }));
+    const menuTrigger = screen.getByRole('button', { name: 'Mais ações do comunicado' });
+    menuTrigger.focus();
+    await user.keyboard('{ArrowDown}');
+    await user.click(screen.getByRole('menuitem', { name: 'Compartilhar manualmente' }));
 
     await waitFor(() => expect(onSharePoster).toHaveBeenCalledWith(approved));
     expect(await screen.findByText(/revise o destino e confirme a publicação/)).toBeDefined();

@@ -39,7 +39,13 @@ describe('CitizenPortal', () => {
     ));
 
     fireEvent.click(screen.getByRole('button', { name: 'Remover cadastro' }));
+    expect(screen.getByRole('alertdialog', { name: /Remover cadastro/ })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(apiMocks.removeCitizenSelf).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover cadastro' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }));
     await screen.findByRole('button', { name: 'Iniciar cadastro de demonstração' });
-    expect(apiMocks.removeCitizenSelf).toHaveBeenCalledWith('one-time-token');
+    expect(apiMocks.removeCitizenSelf).toHaveBeenCalledExactlyOnceWith('one-time-token');
   });
 });

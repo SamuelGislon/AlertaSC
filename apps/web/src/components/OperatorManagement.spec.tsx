@@ -47,8 +47,13 @@ describe('OperatorManagement', () => {
 
     expect(await screen.findByText('operator-synthetic-2')).toBeDefined();
     await user.click(screen.getByRole('button', { name: 'Desativar operador' }));
+    expect(screen.getByRole('alertdialog', { name: /Desativar operador/ })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(api.disableOperator).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Desativar operador' }));
     await user.click(screen.getByRole('button', { name: 'Confirmar desativação' }));
-    await waitFor(() => expect(api.disableOperator).toHaveBeenCalledWith('operator-synthetic-2'));
+    await waitFor(() => expect(api.disableOperator).toHaveBeenCalledExactlyOnceWith('operator-synthetic-2'));
     expect(api.operators).toHaveBeenCalledTimes(2);
   });
 });

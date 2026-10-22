@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  BellRing, ChartNoAxesCombined, ClipboardList, House, LayoutDashboard,
+  LogIn, MessageCircle, TriangleAlert, UserRound, UsersRound,
+} from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { api, currentAccessToken, type AlertView, type OperatorSession, setAccessToken } from './api.js';
 import { AlertBoard } from './components/AlertBoard.js';
 import { AppShell, type ShellNavigationItem } from './components/AppShell.js';
@@ -16,17 +22,17 @@ import { SyntheticMonitoring } from './components/SyntheticMonitoring.js';
 type Page = 'public' | 'citizen' | 'feedback' | 'login' | 'overview' | 'monitoring' | 'alerts' | 'audit' | 'admin';
 
 const publicNavigation: ShellNavigationItem[] = [
-  { id: 'public', label: 'Início', icon: '⌂' },
-  { id: 'citizen', label: 'Cadastro', icon: '○' },
-  { id: 'feedback', label: 'Retorno', icon: '♡' },
-  { id: 'login', label: 'Operador', icon: '◆' },
+  { id: 'public', label: 'Início', icon: House },
+  { id: 'citizen', label: 'Cadastro', icon: UserRound },
+  { id: 'feedback', label: 'Retorno', icon: MessageCircle },
+  { id: 'login', label: 'Operador', icon: LogIn },
 ];
 
 const operatorNavigation: ShellNavigationItem[] = [
-  { id: 'overview', label: 'Resumo', icon: '⌂' },
-  { id: 'monitoring', label: 'Monitoramento', icon: '▥' },
-  { id: 'alerts', label: 'Alertas', icon: '!' },
-  { id: 'audit', label: 'Auditoria', icon: '◷' },
+  { id: 'overview', label: 'Resumo', icon: LayoutDashboard },
+  { id: 'monitoring', label: 'Monitoramento', icon: ChartNoAxesCombined },
+  { id: 'alerts', label: 'Alertas', icon: BellRing },
+  { id: 'audit', label: 'Auditoria', icon: ClipboardList },
 ];
 
 export function App() {
@@ -126,7 +132,7 @@ export function App() {
       {citizenPage ? <CitizenPortal onBackToLogin={() => setPage('public')} />
         : feedbackPage ? <CitizenFeedback onNavigate={navigate} />
           : loginPage ? <div className="login-layout">
-            <div className="notice notice-info"><span className="notice-icon" aria-hidden="true">i</span><div><strong>Conta autorizada</strong><p>Não há cadastro público de operadores. Entre somente com credenciais provisionadas para a equipe municipal.</p></div></div>
+            <Alert role="note" className="notice notice-info"><LogIn className="notice-icon" aria-hidden="true" /><div><AlertTitle>Conta autorizada</AlertTitle><AlertDescription>Não há cadastro público de operadores. Entre somente com credenciais provisionadas para a equipe municipal.</AlertDescription></div></Alert>
             <LoginForm onSubmit={signIn} error={authError} />
           </div>
             : <PublicDashboard onNavigate={navigate} />}
@@ -135,17 +141,20 @@ export function App() {
 
   const isAdmin = operator.roles.includes('ADMIN');
   const navigation = isAdmin
-    ? [...operatorNavigation, { id: 'admin', label: 'Administração', icon: '○' }]
+    ? [...operatorNavigation, { id: 'admin', label: 'Administração', icon: UsersRound }]
     : operatorNavigation;
 
   const operatorPage = page === 'admin'
     ? isAdmin ? <section className="screen-stack" aria-label="Administração sintética">
-      <div role="tablist" aria-label="Cadastros sintéticos" className="admin-tabs">
-        <button type="button" role="tab" aria-selected={adminSection === 'operators'} onClick={() => setAdminSection('operators')}>Operadores sintéticos</button>
-        <button type="button" role="tab" aria-selected={adminSection === 'citizens'} onClick={() => setAdminSection('citizens')}>Cadastros sintéticos</button>
-      </div>
-      {adminSection === 'operators' ? <OperatorManagement /> : <SyntheticCitizens />}
-    </section> : <section className="notice notice-error" role="alert"><strong>Acesso negado.</strong> Esta área exige a permissão administrativa validada pela API.</section>
+      <Tabs value={adminSection} onValueChange={(value) => setAdminSection(value as 'operators' | 'citizens')}>
+        <TabsList aria-label="Cadastros sintéticos" className="admin-tabs">
+          <TabsTrigger value="operators">Operadores sintéticos</TabsTrigger>
+          <TabsTrigger value="citizens">Cadastros sintéticos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="operators"><OperatorManagement /></TabsContent>
+        <TabsContent value="citizens"><SyntheticCitizens /></TabsContent>
+      </Tabs>
+    </section> : <Alert variant="destructive" className="notice notice-error"><TriangleAlert className="notice-icon" aria-hidden="true" /><div><AlertTitle>Acesso negado.</AlertTitle><AlertDescription>Esta área exige a permissão administrativa validada pela API.</AlertDescription></div></Alert>
     : page === 'overview' ? <OperatorOverview onNavigate={navigate} />
       : page === 'monitoring' ? <SyntheticMonitoring />
         : page === 'audit' ? <AuditOverview onNavigate={navigate} />

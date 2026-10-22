@@ -1,4 +1,10 @@
 import { useMemo } from 'react';
+import { ArrowRight, CloudRain, CloudSun, TriangleAlert, WavesHorizontal, Wind } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Badge } from '@/components/ui/badge.js';
+import { Button } from '@/components/ui/button.js';
+import { Card } from '@/components/ui/card.js';
+import { Skeleton } from '@/components/ui/skeleton.js';
 
 export interface PublicAlert {
   id: string;
@@ -42,32 +48,38 @@ export function PublicDashboard({ alerts = sampleAlerts, now = Date.now(), state
         <h1 id="public-dashboard-title">Acompanhe as condições em Presidente Getúlio</h1>
         <p>Informações de monitoramento e avisos públicos em um só lugar.</p>
         <div className="hero-actions">
-          <button type="button" className="button button-white" onClick={() => onNavigate('feedback')}>Como este aviso ajudou?</button>
-          <button type="button" className="button button-outline" onClick={() => onNavigate('citizen')}>Preferências de avisos</button>
+          <Button type="button" variant="secondary" className="button button-white" onClick={() => onNavigate('feedback')}>Como este aviso ajudou?</Button>
+          <Button type="button" variant="outline" className="button button-outline" onClick={() => onNavigate('citizen')}>Preferências de avisos</Button>
         </div>
       </div>
-      <div className="hero-mark" aria-hidden="true">≋</div>
+      <div className="hero-mark" aria-hidden="true"><CloudRain size={68} strokeWidth={1.5} /></div>
     </section>
 
-    <div className="notice notice-warn" role="note">
-      <span className="notice-icon" aria-hidden="true">i</span>
-      <div><strong>Ambiente de demonstração</strong><p>Todos os valores abaixo são fictícios e não representam uma condição meteorológica observada.</p></div>
-    </div>
+    <Alert className="notice notice-warn" role="note">
+      <TriangleAlert className="notice-icon" aria-hidden="true" />
+      <div><AlertTitle>Ambiente de demonstração</AlertTitle><AlertDescription>Todos os valores abaixo são fictícios e não representam uma condição meteorológica observada.</AlertDescription></div>
+    </Alert>
 
-    {state === 'loading' && <p className="notice notice-info" role="status">Carregando condições sintéticas…</p>}
-    {state === 'error' && <p className="notice notice-error" role="alert">Não foi possível carregar as condições sintéticas. Tente novamente mais tarde.</p>}
+    {state === 'loading' && <div className="metric-grid" role="status" aria-label="Carregando condições sintéticas">
+      <span className="sr-only">Carregando condições sintéticas…</span>
+      {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="metric-card h-32" aria-hidden="true" />)}
+    </div>}
+    {state === 'error' && <Alert variant="destructive" className="notice notice-error" role="alert">
+      <TriangleAlert className="notice-icon" aria-hidden="true" />
+      <AlertDescription>Não foi possível carregar as condições sintéticas. Tente novamente mais tarde.</AlertDescription>
+    </Alert>}
 
     {state === 'ready' && <>
       <section className="metric-grid" aria-label="Condições sintéticas atuais">
-        <article className="metric-card"><div className="metric-top"><span>Chuva acumulada</span><span aria-hidden="true">≋</span></div><p className="metric-value">46 mm</p><p className="metric-foot">Exemplo sintético · últimas 6 horas</p></article>
-        <article className="metric-card"><div className="metric-top"><span>Rio Índios</span><span aria-hidden="true">∿</span></div><p className="metric-value">1,82 m</p><p className="metric-foot">Leitura de demonstração · 15h20</p></article>
-        <article className="metric-card"><div className="metric-top"><span>Previsão de chuva</span><span aria-hidden="true">◷</span></div><p className="metric-value">20 mm</p><p className="metric-foot">Próximas 6 horas · sintética</p></article>
-        <article className="metric-card"><div className="metric-top"><span>Vento</span><span aria-hidden="true">↗</span></div><p className="metric-value">24 km/h</p><p className="metric-foot">Exemplo sintético · 15h20</p></article>
+        <Card className="metric-card"><div className="metric-top"><span>Chuva acumulada</span><span aria-hidden="true"><CloudRain size={18} /></span></div><p className="metric-value">46 mm</p><p className="metric-foot">Exemplo sintético · últimas 6 horas</p></Card>
+        <Card className="metric-card"><div className="metric-top"><span>Rio Índios</span><span aria-hidden="true"><WavesHorizontal size={18} /></span></div><p className="metric-value">1,82 m</p><p className="metric-foot">Leitura de demonstração · 15h20</p></Card>
+        <Card className="metric-card"><div className="metric-top"><span>Previsão de chuva</span><span aria-hidden="true"><CloudSun size={18} /></span></div><p className="metric-value">20 mm</p><p className="metric-foot">Próximas 6 horas · sintética</p></Card>
+        <Card className="metric-card"><div className="metric-top"><span>Vento</span><span aria-hidden="true"><Wind size={18} /></span></div><p className="metric-value">24 km/h</p><p className="metric-foot">Exemplo sintético · 15h20</p></Card>
       </section>
 
       <div className="content-grid content-grid-2">
-        <section className="surface-card card-padding">
-          <div className="section-heading"><div><h2>Condições recentes</h2><p>Série fictícia para demonstrar a leitura do painel</p></div><span className="status-chip status-warn">SINTÉTICO</span></div>
+        <Card className="surface-card card-padding">
+          <div className="section-heading"><div><h2>Condições recentes</h2><p>Série fictícia para demonstrar a leitura do painel</p></div><Badge variant="secondary" className="status-chip status-warn">SINTÉTICO</Badge></div>
           <figure className="chart" role="img" aria-label="Gráfico sintético de precipitação nas últimas seis horas">
             <svg viewBox="0 0 720 220" aria-hidden="true" preserveAspectRatio="none">
               <g fill="none" stroke="var(--line)" strokeWidth="1"><path d="M50 25H700M50 70H700M50 115H700M50 160H700" /></g>
@@ -77,19 +89,19 @@ export function PublicDashboard({ alerts = sampleAlerts, now = Date.now(), state
             </svg>
           </figure>
           <p className="caption">Fonte demonstrativa · valores sem conexão a órgão público.</p>
-        </section>
+        </Card>
 
-        <section className="surface-card card-padding" aria-labelledby="public-alerts-heading">
-          <div className="section-heading"><div><h2 id="public-alerts-heading">Avisos públicos</h2><p>Somente comunicados sintéticos aprovados e válidos</p></div><span className="status-chip status-info">{visibleAlerts.length} {visibleAlerts.length === 1 ? 'aviso' : 'avisos'}</span></div>
+        <Card className="surface-card card-padding" aria-labelledby="public-alerts-heading">
+          <div className="section-heading"><div><h2 id="public-alerts-heading">Avisos públicos</h2><p>Somente comunicados sintéticos aprovados e válidos</p></div><Badge variant="secondary" className="status-chip status-info">{visibleAlerts.length} {visibleAlerts.length === 1 ? 'aviso' : 'avisos'}</Badge></div>
           {visibleAlerts.length === 0 ? <p className="empty-state">Sem aviso público válido no momento.</p> : <ul className="alert-list">
             {visibleAlerts.map((alert) => <li className="public-alert-card" key={alert.id}>
-              <div className="alert-card-top"><span className="status-chip status-warn">Demonstração</span><span className="caption">Hoje · {formatTime(alert.generatedAt)}</span></div>
+              <div className="alert-card-top"><Badge variant="secondary" className="status-chip status-warn">Demonstração</Badge><span className="caption">Hoje · {formatTime(alert.generatedAt)}</span></div>
               <h3>{alert.title}</h3><p>{alert.summary}</p>
-              <button type="button" className="button button-outline" onClick={() => onNavigate('feedback')}>Ver aviso e enviar retorno</button>
+              <Button type="button" variant="outline" className="button button-outline" onClick={() => onNavigate('feedback')}>Ver aviso e enviar retorno</Button>
             </li>)}
           </ul>}
-          <button type="button" className="button button-quiet public-login-link" onClick={() => onNavigate('login')}>Acesso do operador <span aria-hidden="true">→</span></button>
-        </section>
+          <Button type="button" variant="ghost" className="button button-quiet public-login-link" onClick={() => onNavigate('login')}>Acesso do operador <ArrowRight size={16} aria-hidden="true" /></Button>
+        </Card>
       </div>
     </>}
   </div>;

@@ -23,6 +23,9 @@ describe('PublicDashboard', () => {
     expect(screen.getByText('46 mm')).toBeDefined();
     expect(screen.getByText('1,82 m')).toBeDefined();
     expect(screen.getByText('Sem aviso público válido no momento.')).toBeDefined();
+    const metricIcons = document.querySelectorAll('.metric-top > span[aria-hidden="true"] svg');
+    expect(metricIcons).toHaveLength(4);
+    expect([...metricIcons].every((icon) => icon.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
   it('lists only approved, synthetic and unexpired public alerts', () => {
