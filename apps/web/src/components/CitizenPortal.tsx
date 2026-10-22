@@ -82,10 +82,12 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
     setProfile({ ...profile, channels });
   }
 
-  return <main className="grid min-h-screen place-items-center p-4">
-    <section className="w-full max-w-lg space-y-5 rounded-2xl bg-white p-6 shadow-sm" aria-labelledby="citizen-portal-title">
-      <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+  return <section className="citizen-portal-card surface-card card-padding" aria-labelledby="citizen-portal-title">
+      <div className="notice notice-warn">
+        <span className="notice-icon" aria-hidden="true">i</span>
+        <div>
         Demonstração local: use somente dados sintéticos. O cadastro de pessoas reais está desativado até a validação institucional.
+        </div>
       </div>
       <div>
         <h1 id="citizen-portal-title" className="text-2xl font-bold">Portal do cidadão</h1>
@@ -130,7 +132,6 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
       </div>}
 
       {message && <p role="status" className="text-sm">{message}</p>}
-      <button onClick={onBackToLogin} className="text-sm text-sky-900 underline">Voltar ao acesso da Defesa Civil</button>
-    </section>
-  </main>;
+      <button onClick={onBackToLogin} className="button button-quiet citizen-back-button">Voltar ao painel público</button>
+  </section>;
 }

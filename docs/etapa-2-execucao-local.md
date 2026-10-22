@@ -72,9 +72,17 @@ O login usa CPF e senha; a API aplica Argon2id, emite JWT de acesso com duraçã
 
 Em modo de teste, a conexão seleciona `alertasc_test` (ou `DATABASE_TEST_URL`). Em produção, `DATABASE_URL` explícita é obrigatória; a aplicação não usa o endereço padrão do banco local.
 
+## Navegação e telas do front-end
+
+O endereço web abre primeiro o painel público sintético. Ele apresenta valores exclusivamente demonstrativos, diferencia aviso aprovado de candidato administrativo e omite avisos que expiraram. Use a navegação para abrir o portal de preferências do cidadão, o formulário de retorno sintético e o acesso restrito do operador.
+
+Após autenticação, a sessão abre a fila de alertas e pode navegar para o resumo operacional, monitoramento sintético e auditoria. Administradores também veem a administração de operadores e cadastros sintéticos. Em telas estreitas, a navegação aparece na barra inferior; em telas largas, aparece no cabeçalho. A área de alertas continua exigindo o bloqueio exclusivo concedido pela API.
+
+Os valores do painel público, do resumo e do monitoramento são fixtures locais e não representam medições atuais. Não há fonte meteorológica conectada nesta etapa. O retorno do cidadão é mantido apenas na tela durante a demonstração e não é enviado nem persistido.
+
 ## Dados de demonstração
 
-Entre com o operador sintético criado pelo seed. A aba de alertas exige que o servidor conceda o bloqueio global à sessão; duas sessões não podem operar a fila ao mesmo tempo. Na tela de acesso, também é possível abrir o portal cidadão sintético. O portal não aceita telefone, endereço, CPF ou localização informados pelo usuário; ele usa apenas fixtures sintéticas e permite editar preferências e remover o cadastro de demonstração.
+Entre com o operador sintético criado pelo seed. A aba de alertas exige que o servidor conceda o bloqueio global à sessão; duas sessões não podem operar a fila ao mesmo tempo. O portal do cidadão usa apenas fixtures sintéticas e permite editar preferências e remover o cadastro de demonstração. Não informe telefone, endereço, CPF, localização ou dados de pessoas reais.
 
 ### Revisão, auditoria e operadores sintéticos
 
@@ -109,6 +117,9 @@ mise exec node@24 -- pnpm typecheck
 mise exec node@24 -- pnpm build
 mise exec node@24 -- pnpm test:unit
 mise exec node@24 -- pnpm test:integration
+mise exec node@24 -- pnpm test:e2e
 ```
+
+Os testes de navegador do frontend iniciam um servidor Vite isolado na porta `5179` e cobrem a navegação pública/cidadão e os cinco tamanhos de viewport definidos para a interface. Se o Chromium do Playwright ainda não estiver instalado nessa máquina, execute uma vez `mise exec node@24 -- pnpm --filter @alertasc/web exec playwright install chromium`.
 
 Os testes de integração usam o banco `alertasc_test` e recusam truncar outro banco. Não execute-os contra `alertasc_dev`.

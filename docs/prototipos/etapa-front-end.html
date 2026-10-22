@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>AlertaSC — protótipo de design system</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --brand: #1d4ed8;
+      --brand-strong: #1e40af;
+      --brand-deep: #1e3a8a;
+      --accent: #4f46e5;
+      --canvas: #f4f7fc;
+      --surface: #fff;
+      --ink: #172554;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --good: #15803d;
+      --good-bg: #f0fdf4;
+      --warning: #a16207;
+      --warning-bg: #fffbeb;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      --info: #1d4ed8;
+      --info-bg: #eff6ff;
+      --radius-card: 18px;
+      --shadow-card: 0 10px 32px rgb(30 58 138 / 7%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      color: var(--ink);
+      background: #e8edf6;
+    }
+    * { box-sizing: border-box; }
+    body { min-width: 320px; margin: 0; }
+    button, input, select, textarea { font: inherit; }
+    button, select { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid #818cf8; outline-offset: 2px;
+    }
+    .review-bar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px max(16px, calc((100vw - 1320px)/2)); background: #0f172a; color: #f8fafc; }
+    .review-title { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 750; }
+    .review-title small { color: #cbd5e1; font-weight: 500; }
+    .review-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .review-controls select, .review-controls button { min-height: 38px; border: 1px solid #475569; border-radius: 10px; background: #1e293b; color: #f8fafc; padding: 7px 11px; font-size: 13px; }
+    .review-controls button[aria-pressed="true"] { border-color: #a5b4fc; background: #3730a3; }
+    .review-note { margin: 0; padding: 9px 16px; background: #fff7ed; color: #7c2d12; text-align: center; font-size: 12px; }
+    .prototype-frame { container: app / inline-size; width: 100%; min-height: calc(100vh - 92px); margin: 0 auto; background: var(--canvas); transition: width .2s ease; }
+    .prototype-frame.simulate-phone { width: min(390px, 100%); min-height: 844px; border-right: 1px solid var(--line); border-left: 1px solid var(--line); box-shadow: 0 18px 60px #0f172a24; }
+    .app-header { position: sticky; top: 60px; z-index: 5; border-bottom: 1px solid var(--line); background: rgb(255 255 255 / 96%); backdrop-filter: blur(14px); }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1280px; min-height: 78px; margin: auto; padding: 12px 28px; }
+    .brand-block { display: flex; min-width: max-content; align-items: center; gap: 12px; }
+    .brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 14px; background: linear-gradient(145deg, var(--brand), var(--accent)); color: #fff; font-size: 15px; font-weight: 850; letter-spacing: -.04em; box-shadow: 0 6px 14px #1d4ed833; }
+    .brand-name { margin: 0; font-size: 19px; font-weight: 820; letter-spacing: -.04em; }
+    .brand-caption { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+    .main-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+    .nav-button { border: 0; border-radius: 10px; background: transparent; color: #475569; padding: 10px 12px; font-size: 13px; font-weight: 650; }
+    .nav-button:hover, .nav-button[aria-current="page"] { background: #eff6ff; color: var(--brand-strong); }
+    .header-account { display: flex; align-items: center; gap: 10px; }
+    .role-chip, .demo-chip, .status-chip, .tag { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; font-size: 11px; font-weight: 750; line-height: 1; }
+    .role-chip { padding: 8px 11px; background: #eef2ff; color: #3730a3; }
+    .demo-chip { padding: 8px 10px; background: var(--warning-bg); color: #854d0e; }
+    .header-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: #dbeafe; color: var(--brand-deep); font-weight: 800; }
+    .page { max-width: 1280px; min-height: calc(100vh - 180px); margin: auto; padding: 32px 28px 54px; }
+    .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .eyebrow { margin: 0 0 8px; color: var(--brand); font-size: 11px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 7px; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; letter-spacing: -.045em; }
+    h2 { margin-bottom: 6px; font-size: 18px; letter-spacing: -.025em; }
+    h3 { margin-bottom: 5px; font-size: 14px; }
+    .lead { max-width: 680px; margin-bottom: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .muted { color: var(--muted); }
+    .small { font-size: 12px; }
+    .tiny { font-size: 11px; }
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-card); }
+    .card-pad { padding: 20px; }
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(240px, .7fr); gap: 28px; align-items: center; border-radius: 24px; padding: clamp(24px, 4vw, 42px); background: linear-gradient(118deg, #1e3a8a 0%, #1d4ed8 64%, #4f46e5 100%); color: white; box-shadow: 0 18px 42px #1e40af33; }
+    .hero::after { position: absolute; right: -72px; bottom: -140px; width: 350px; height: 350px; border: 1px solid #ffffff29; border-radius: 50%; content: ""; box-shadow: 0 0 0 35px #ffffff0c, 0 0 0 72px #ffffff08; }
+    .hero > * { position: relative; z-index: 1; }
+    .hero .eyebrow { color: #bfdbfe; }
+    .hero h1 { max-width: 700px; margin-bottom: 12px; font-size: clamp(28px, 4.1vw, 44px); }
+    .hero p { color: #dbeafe; }
+    .hero-mark { justify-self: end; display: grid; width: 150px; height: 150px; place-items: center; border: 1px solid #ffffff55; border-radius: 50%; background: #ffffff12; color: white; font-size: 56px; }
+    .hero-actions, .actions { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+    .button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 11px; padding: 10px 14px; font-size: 13px; font-weight: 760; text-decoration: none; }
+    .button-primary { background: var(--brand); color: white; }
+    .button-primary:hover { background: var(--brand-strong); }
+    .button-white { background: white; color: var(--brand-deep); }
+    .button-outline { border-color: var(--line); background: white; color: var(--ink); }
+    .button-quiet { background: transparent; color: var(--brand-strong); }
+    .button-danger { border-color: #fecaca; background: var(--danger-bg); color: var(--danger); }
+    .button:disabled { cursor: not-allowed; opacity: .55; }
+    .notice { display: flex; gap: 12px; align-items: flex-start; border: 1px solid #fcd34d; border-radius: 14px; background: var(--warning-bg); padding: 14px 16px; color: #78350f; }
+    .notice-info { border-color: #bfdbfe; background: var(--info-bg); color: #1e3a8a; }
+    .notice-success { border-color: #bbf7d0; background: var(--good-bg); color: #14532d; }
+    .notice-icon { flex: 0 0 auto; font-size: 18px; line-height: 1; }
+    .metric { padding: 18px; }
+    .metric-top { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 650; }
+    .metric-value { margin: 13px 0 4px; font-size: 28px; font-weight: 830; letter-spacing: -.05em; }
+    .metric-foot { color: var(--muted); font-size: 11px; }
+    .metric-icon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 12px; background: #eff6ff; font-size: 17px; }
+    .status-chip { padding: 7px 9px; }
+    .status-good { background: var(--good-bg); color: var(--good); }
+    .status-warn { background: var(--warning-bg); color: var(--warning); }
+    .status-error { background: var(--danger-bg); color: var(--danger); }
+    .status-info { background: var(--info-bg); color: var(--info); }
+    .tag { padding: 6px 8px; background: #f1f5f9; color: #475569; }
+    .list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+    .list-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 13px; background: #fff; padding: 14px; }
+    .row-main { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
+    .row-icon { display: grid; flex: 0 0 auto; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: #eff6ff; }
+    .row-main p { margin: 3px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 13px 12px; border-bottom: 1px solid #edf2f7; vertical-align: top; font-size: 12px; }
+    th { color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .source-card { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px; }
+    .source-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 4px #dcfce7; }
+    .source-dot.stale { background: #f59e0b; box-shadow: 0 0 0 4px #fef3c7; }
+    .chart { width: 100%; min-height: 210px; }
+    .chart svg { display: block; width: 100%; height: auto; min-width: 380px; }
+    .chart-scroll { overflow-x: auto; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .field { display: grid; gap: 7px; }
+    .field-full { grid-column: 1 / -1; }
+    .field label, .field-label { color: #334155; font-size: 12px; font-weight: 750; }
+    .field input, .field select, .field textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 11px; background: white; padding: 11px 12px; color: var(--ink); }
+    .field textarea { min-height: 96px; resize: vertical; }
+    .field-hint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid #edf2f7; }
+    .toggle-row:last-child { border-bottom: 0; }
+    .toggle-row p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+    .toggle { width: 42px; height: 24px; appearance: none; border-radius: 999px; background: #cbd5e1; position: relative; transition: background .15s; }
+    .toggle::after { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; content: ""; box-shadow: 0 1px 3px #0f172a33; transition: transform .15s; }
+    .toggle:checked { background: var(--brand); }
+    .toggle:checked::after { transform: translateX(18px); }
+    .timeline { position: relative; display: grid; gap: 0; padding-left: 27px; }
+    .timeline::before { position: absolute; top: 5px; bottom: 8px; left: 8px; width: 2px; background: #dbeafe; content: ""; }
+    .timeline-item { position: relative; padding: 0 0 20px; }
+    .timeline-item::before { position: absolute; top: 4px; left: -24px; width: 10px; height: 10px; border: 3px solid white; border-radius: 50%; background: var(--brand); content: ""; box-shadow: 0 0 0 1px #93c5fd; }
+    .timeline-item p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .alert-callout { border-left: 5px solid #f59e0b; background: linear-gradient(100deg, #fffbeb, white); }
+    .alert-callout .alert-symbol { display: grid; flex: 0 0 auto; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: #fef3c7; font-size: 21px; }
+    .poster-preview { overflow: hidden; max-width: 420px; margin: auto; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 14px 30px #0f172a14; }
+    .poster-head { padding: 18px; background: #f97316; color: white; }
+    .poster-head strong { display: block; font-size: 17px; letter-spacing: .03em; }
+    .poster-body { display: grid; gap: 10px; padding: 14px; }
+    .poster-block { display: flex; gap: 12px; align-items: center; border-radius: 12px; background: #f1f5f9; padding: 13px; font-size: 13px; }
+    .poster-foot { background: #172554; padding: 13px; color: white; text-align: center; font-size: 11px; }
+    .page-footer { max-width: 1280px; margin: auto; border-top: 1px solid var(--line); padding: 16px 28px 24px; color: var(--muted); font-size: 11px; }
+    .bottom-nav { display: none; }
+    .screen[hidden] { display: none !important; }
+    .spacer-16 { height: 16px; }
+    #screen-host:focus { outline: none; }
+    @container app (max-width: 900px) {
+      .header-inner { gap: 14px; padding-inline: 20px; }
+      .main-nav { gap: 1px; }
+      .nav-button { padding-inline: 9px; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .review-bar { position: relative; padding: 11px 12px; }
+      .review-title { width: 100%; justify-content: space-between; }
+      .review-controls { width: 100%; }
+      .review-controls select { flex: 1; min-width: 180px; }
+    }
+    @container app (max-width: 700px) {
+      .app-header { position: relative; top: auto; }
+      .header-inner { min-height: 68px; padding: 11px 16px; }
+      .main-nav { display: none; }
+      .header-account .role-chip { display: none; }
+      .brand-mark { width: 38px; height: 38px; }
+      .brand-name { font-size: 17px; }
+      .page { min-height: calc(100vh - 166px); padding: 23px 16px 92px; }
+      .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 19px; }
+      .page-heading .actions { width: 100%; }
+      .page-heading .actions .button { flex: 1; }
+      .hero { grid-template-columns: 1fr; gap: 16px; border-radius: 20px; padding: 24px 20px; }
+      .hero-mark { display: none; }
+      .hero .hero-actions .button { flex: 1; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .metric { padding: 16px; }
+      .metric-value { font-size: 24px; }
+      .card-pad { padding: 16px; }
+      .list-row { align-items: flex-start; flex-wrap: wrap; padding: 13px; }
+      .list-row > .button { width: 100%; }
+      .source-card { grid-template-columns: 28px minmax(0, 1fr); }
+      .source-card > .status-chip { grid-column: 2; justify-self: start; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field-full { grid-column: auto; }
+      .table-wrap { overflow: visible; }
+      table, tbody, tr, td { display: block; width: 100%; }
+      thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+      tr { margin: 0 0 12px; border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; }
+      td { display: grid; grid-template-columns: 105px minmax(0,1fr); gap: 10px; padding: 8px 0; border: 0; }
+      td::before { color: var(--muted); content: attr(data-label); font-size: 10px; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+      .bottom-nav { position: fixed; z-index: 7; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); background: rgb(255 255 255 / 97%); padding: 7px max(7px, env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom)); backdrop-filter: blur(14px); }
+      .bottom-nav button { display: grid; min-height: 48px; place-items: center; gap: 2px; border: 0; border-radius: 10px; background: transparent; color: #64748b; font-size: 9px; font-weight: 700; }
+      .bottom-nav button span:first-child { font-size: 17px; }
+      .bottom-nav button[aria-current="page"] { background: #eff6ff; color: var(--brand-strong); }
+      .page-footer { padding: 12px 16px 80px; }
+    }
+    @container app (max-width: 370px) {
+      .demo-chip { padding: 7px; font-size: 10px; }
+      .header-account { gap: 6px; }
+      .brand-block { gap: 8px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .hero-actions .button { width: 100%; }
+      td { grid-template-columns: 88px minmax(0,1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <section class="review-bar" aria-label="Controles do protótipo">
+    <div class="review-title">AlertaSC <small>· proposta visual para revisão · sem integração</small></div>
+    <div class="review-controls">
+      <label class="tiny" for="screen-picker">Tela</label>
+      <select id="screen-picker" aria-label="Selecionar tela do protótipo">
+        <optgroup label="Área pública e cidadão">
+          <option value="public">Painel público</option>
+          <option value="citizen">Preferências do cidadão</option>
+          <option value="feedback">Retorno sobre o aviso</option>
+        </optgroup>
+        <optgroup label="Área de operação">
+          <option value="login">Acesso do operador</option>
+          <option value="operator-home">Visão geral operacional</option>
+          <option value="monitoring">Monitoramento</option>
+          <option value="queue">Fila e revisão de alertas</option>
+          <option value="editor">Comunicado aprovado</option>
+          <option value="audit">Auditoria</option>
+          <option value="operators">Operadores sintéticos</option>
+          <option value="citizens-admin">Cadastros sintéticos</option>
+        </optgroup>
+      </select>
+      <button id="desktop-preview" type="button" aria-pressed="true">Computador</button>
+      <button id="phone-preview" type="button" aria-pressed="false">Celular</button>
+    </div>
+  </section>
+  <p class="review-note">Protótipo navegável com dados fictícios. Nenhum cadastro, fonte, alerta ou envio real está conectado.</p>
+  <div id="prototype-frame" class="prototype-frame">
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="brand-block">
+          <div class="brand-mark" aria-hidden="true">AS</div>
+          <div><p class="brand-name">AlertaSC</p><p class="brand-caption">Presidente Getúlio · SC</p></div>
+        </div>
+        <nav class="main-nav" id="main-nav" aria-label="Navegação principal"></nav>
+        <div class="header-account">
+          <span class="role-chip" id="role-chip">Área pública</span>
+          <span class="demo-chip">● Dados sintéticos</span>
+          <span class="header-avatar" aria-label="Perfil de demonstração">AS</span>
+        </div>
+      </div>
+    </header>
+    <main id="screen-host" class="page" tabindex="-1"></main>
+    <nav class="bottom-nav" id="bottom-nav" aria-label="Navegação móvel"></nav>
+    <footer class="page-footer">AlertaSC · ambiente de demonstração · dados fictícios · sem observação oficial</footer>
+  </div>
+  <script>
+    const icon = { rain: '≋', river: '∿', wind: '↗', alert: '!', check: '✓', chart: '▥', clock: '◷', users: '○', shield: '◆', file: '▤', bell: '♢', location: '⌖', sun: '○' };
+    const screens = {
+      public: { title: 'Painel público', area: 'public', nav: [['public','⌂','Início'],['citizen','○','Cadastro'],['feedback','♡','Retorno'],['login','◆','Operador']] },
+      citizen: { title: 'Preferências do cidadão', area: 'citizen', nav: [['public','⌂','Início'],['citizen','○','Cadastro'],['feedback','♡','Retorno'],['login','◆','Operador']] },
+      feedback: { title: 'Retorno sobre o aviso', area: 'citizen', nav: [['public','⌂','Início'],['citizen','○','Cadastro'],['feedback','♡','Retorno'],['login','◆','Operador']] },
+      login: { title: 'Acesso do operador', area: 'public', nav: [['public','⌂','Início'],['login','◆','Operador']] },
+      'operator-home': { title: 'Visão geral operacional', area: 'operator', nav: [['operator-home','⌂','Resumo'],['monitoring','▥','Monitorar'],['queue','!','Alertas'],['audit','◷','Auditoria']] },
+      monitoring: { title: 'Monitoramento', area: 'operator', nav: [['operator-home','⌂','Resumo'],['monitoring','▥','Monitorar'],['queue','!','Alertas'],['audit','◷','Auditoria']] },
+      queue: { title: 'Fila e revisão de alertas', area: 'operator', nav: [['operator-home','⌂','Resumo'],['monitoring','▥','Monitorar'],['queue','!','Alertas'],['audit','◷','Auditoria']] },
+      editor: { title: 'Comunicado aprovado', area: 'operator', nav: [['queue','!','Alertas'],['editor','▤','Comunicado'],['audit','◷','Auditoria'],['operators','○','Admin']] },
+      audit: { title: 'Auditoria', area: 'operator', nav: [['operator-home','⌂','Resumo'],['queue','!','Alertas'],['audit','◷','Auditoria'],['operators','○','Admin']] },
+      operators: { title: 'Operadores sintéticos', area: 'operator', nav: [['operator-home','⌂','Resumo'],['operators','○','Operadores'],['citizens-admin','≋','Cadastros'],['audit','◷','Auditoria']] },
+      'citizens-admin': { title: 'Cadastros sintéticos', area: 'operator', nav: [['operator-home','⌂','Resumo'],['operators','○','Operadores'],['citizens-admin','≋','Cadastros'],['audit','◷','Auditoria']] },
+    };
+    const badge = (text, kind='info') => `<span class="status-chip status-${kind}">${text}</span>`;
+    const metric = (label,value,foot,emoji) => `<article class="card metric"><div class="metric-top"><span>${label}</span><span class="metric-icon">${emoji}</span></div><div class="metric-value">${value}</div><div class="metric-foot">${foot}</div></article>`;
+    const pageHeading = (eyebrow,title,desc,action='') => `<div class="page-heading"><div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="lead">${desc}</p></div>${action ? `<div class="actions">${action}</div>` : ''}</div>`;
+    const chart = `<div class="chart-scroll"><div class="chart"><svg viewBox="0 0 720 220" role="img" aria-label="Gráfico sintético de precipitação nas últimas seis horas"><g fill="none" stroke="#e2e8f0" stroke-width="1"><path d="M50 25H700M50 70H700M50 115H700M50 160H700"/></g><g fill="#64748b" font-size="11"><text x="7" y="29">60 mm</text><text x="14" y="74">40 mm</text><text x="14" y="119">20 mm</text><text x="24" y="164">0</text><text x="50" y="195">09h</text><text x="170" y="195">11h</text><text x="290" y="195">13h</text><text x="410" y="195">15h</text><text x="530" y="195">17h</text><text x="650" y="195">19h</text></g><path d="M50 140 C95 130 112 136 160 116 S225 96 270 110 S330 130 375 88 S445 56 490 76 S555 100 600 58 S650 45 700 51 L700 160 L50 160Z" fill="#bfdbfe" opacity=".72"/><path d="M50 140 C95 130 112 136 160 116 S225 96 270 110 S330 130 375 88 S445 56 490 76 S555 100 600 58 S650 45 700 51" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><circle cx="600" cy="58" r="5" fill="#fff" stroke="#1d4ed8" stroke-width="3"/></svg></div></div>`;
+    const publicPage = `<section class="screen" data-screen="public">
+      <div class="hero"><div><p class="eyebrow">Painel municipal · atualizado às 15h30</p><h1>Acompanhe as condições em Presidente Getúlio</h1><p>Informações de monitoramento e avisos públicos em um só lugar.</p><div class="hero-actions"><button class="button button-white" data-go="feedback">Como este aviso ajudou?</button><button class="button button-outline" data-go="citizen">Preferências de avisos</button></div></div><div class="hero-mark" aria-hidden="true">${icon.rain}</div></div>
+      <div class="spacer-16"></div>
+      <div class="notice"><span class="notice-icon">i</span><div><strong>Ambiente de demonstração</strong><div class="small">Todos os valores abaixo são fictícios e não representam uma condição meteorológica observada.</div></div></div>
+      <div class="spacer-16"></div>
+      <div class="grid grid-4">${metric('Chuva acumulada','46 mm','Exemplo sintético · últimas 6 horas',icon.rain)}${metric('Rio Índios','1,82 m','Leitura de demonstração · 15h20',icon.river)}${metric('Previsão de chuva','20 mm','Próximas 6 horas · sintética',icon.clock)}${metric('Vento','24 km/h','Exemplo sintético · 15h20',icon.wind)}</div>
+      <div class="spacer-16"></div>
+      <div class="grid grid-2"><section class="card card-pad"><div class="card-head"><div><h2>Condições recentes</h2><p class="small muted">Série fictícia para demonstrar a leitura do painel</p></div>${badge('SINTÉTICO','warn')}</div>${chart}<div class="tiny muted">Fonte demonstrativa · valores sem conexão a órgão público</div></section><section class="card card-pad"><div class="card-head"><div><h2>Avisos públicos</h2><p class="small muted">Somente comunicados aprovados são exibidos aqui</p></div>${badge('1 aviso','info')}</div><article class="card card-pad alert-callout"><div class="row-main"><div class="alert-symbol">${icon.alert}</div><div><div class="actions">${badge('Demonstração','warn')}<span class="tiny muted">Hoje · 15h10</span></div><h3 style="margin-top:10px">Exemplo de aviso de chuva intensa</h3><p class="small muted">Conteúdo sintético para apresentar a composição de um comunicado público. Nenhum risco atual foi confirmado.</p></div></div><div class="actions" style="margin-top:14px"><button class="button button-outline" data-go="feedback">Ver aviso e enviar retorno</button></div></article><p class="tiny muted" style="margin:14px 0 0">Sem aviso oficial publicado no ambiente de demonstração.</p></section></div>
+    </section>`;
+    const citizenPage = `<section class="screen" data-screen="citizen">
+      ${pageHeading('Área do cidadão','Preferências de avisos','Cadastro voluntário demonstrativo. Esta tela não pede telefone, endereço ou localização e não envia mensagens.')}
+      <div class="notice"><span class="notice-icon">i</span><div><strong>Cadastro sintético</strong><div class="small">O uso de dados pessoais reais não está habilitado neste protótipo.</div></div></div><div class="spacer-16"></div>
+      <div class="grid grid-2"><section class="card card-pad"><div class="card-head"><div><h2>Receber avisos</h2><p class="small muted">Preferências fictícias vinculadas a uma demonstração local</p></div>${badge('Demonstração','warn')}</div><div class="toggle-row"><div><strong class="small">Presidente Getúlio/SC</strong><p>Município selecionado para o piloto</p></div><input class="toggle" type="checkbox" checked aria-label="Selecionar Presidente Getúlio"></div><div class="toggle-row"><div><strong class="small">Chuva intensa</strong><p>Categoria de exemplo</p></div><input class="toggle" type="checkbox" checked aria-label="Ativar avisos de chuva intensa"></div><div class="toggle-row"><div><strong class="small">Inundação</strong><p>Categoria de exemplo</p></div><input class="toggle" type="checkbox" aria-label="Ativar avisos de inundação"></div><div class="toggle-row"><div><strong class="small">Canal de demonstração</strong><p>Simulação local, sem mensagem real</p></div><input class="toggle" type="checkbox" checked aria-label="Ativar canal de demonstração"></div><div class="actions" style="margin-top:18px"><button class="button button-primary" data-message="Preferências sintéticas atualizadas.">Salvar preferências</button><button class="button button-danger" data-message="Cadastro sintético removido da base ativa.">Remover cadastro</button></div></section><section class="card card-pad"><div class="card-head"><div><h2>Seu cadastro</h2><p class="small muted">Resumo da demonstração local</p></div>${badge('Ativo','good')}</div><div class="list-row"><div class="row-main"><div class="row-icon">○</div><div><strong>Morador de demonstração</strong><p>Nenhum dado de contato armazenado nesta tela</p></div></div></div><p class="small muted" style="margin:16px 0">Ao remover o cadastro real, futuras comunicações são bloqueadas imediatamente e os dados ativos são apagados conforme a política institucional aprovada.</p><button class="button button-outline" data-go="feedback">Ver avisos e enviar retorno</button></section></div>
+    </section>`;
+    const feedbackPage = `<section class="screen" data-screen="feedback">
+      ${pageHeading('Retorno do cidadão','Este aviso foi útil?','O retorno é voluntário e ligado apenas ao aviso da demonstração, sem solicitar um cadastro de contato.')}
+      <div class="grid grid-2"><article class="card card-pad"><div class="card-head"><div><h2>Exemplo de aviso de chuva intensa</h2><p class="small muted">Presidente Getúlio · Hoje às 15h10</p></div>${badge('Sintético','warn')}</div><p class="lead">Aviso de demonstração sobre chuva intensa. Este conteúdo não corresponde a uma condição observada nem a uma orientação oficial.</p><div class="spacer-16"></div><label class="field"><span class="field-label">Sua avaliação</span><select aria-label="Sua avaliação"><option>Selecione uma opção</option><option>Foi útil</option><option>Não foi útil</option><option>Não consigo avaliar</option></select></label><div class="actions" style="margin-top:16px"><button class="button button-primary" data-message="Retorno sintético registrado. Obrigado.">Enviar retorno</button></div><p class="field-hint" style="margin-top:10px">Este formulário de protótipo não envia nem persiste dados.</p></article><aside class="card card-pad"><h2>Privacidade</h2><p class="small muted">A tela de retorno não pede nome, telefone, endereço ou localização. A implementação deve guardar apenas o vínculo técnico necessário ao aviso e a opção selecionada, conforme a issue aprovada.</p>${badge('Sem dados reais','good')}</aside></div>
+    </section>`;
+    const loginPage = `<section class="screen" data-screen="login">
+      <div style="max-width:500px;margin:24px auto"><div class="notice"><span class="notice-icon">i</span><div><strong>Conta autorizada</strong><div class="small">Não há cadastro público de operadores. Entre somente com credenciais provisionadas pela Defesa Civil municipal.</div></div></div><div class="spacer-16"></div><section class="card card-pad"><p class="eyebrow">Área restrita</p><h1>Entrar no AlertaSC</h1><p class="lead">Acesso destinado às pessoas operadoras autorizadas.</p><div class="spacer-16"></div><div class="form-grid"><label class="field field-full"><span class="field-label">CPF sintético</span><input autocomplete="off" inputmode="numeric" placeholder="Use somente credenciais de demonstração" /></label><label class="field field-full"><span class="field-label">Senha</span><input type="password" placeholder="••••••••••" autocomplete="new-password" /></label></div><div class="actions" style="margin-top:18px"><button class="button button-primary" data-go="operator-home">Entrar na demonstração</button></div><p class="tiny muted" style="margin:12px 0 0">O protótipo não autentica nem envia valores preenchidos.</p></section></div>
+    </section>`;
+    const operatorHome = `<section class="screen" data-screen="operator-home">
+      ${pageHeading('Área de operação','Visão geral','Resumo sintético do ambiente de monitoramento municipal.', '<button class="button button-outline" data-go="queue">Abrir fila de alertas →</button>')}
+      <div class="notice notice-info"><span class="notice-icon">i</span><div><strong>Dados de demonstração</strong><div class="small">Não há fonte oficial conectada. Os exemplos abaixo servem para testar navegação e hierarquia da informação.</div></div></div><div class="spacer-16"></div>
+      <div class="grid grid-4">${metric('Fontes em demonstração','3','Uma leitura sintética desatualizada',icon.chart)}${metric('Na fila','2','Aguardando triagem',icon.alert)}${metric('Em análise','1','Atribuído a operador sintético',icon.clock)}${metric('Avisos públicos','1','Aprovado · ainda válido',icon.bell)}</div><div class="spacer-16"></div>
+      <div class="grid grid-2"><section class="card card-pad"><div class="card-head"><div><h2>Estado do monitoramento</h2><p class="small muted">Resumo por fonte sintética</p></div><button class="button button-quiet" data-go="monitoring">Ver painel →</button></div><ul class="list"><li class="list-row"><div class="row-main"><span class="source-dot"></span><div><strong class="small">Estação demonstrativa — Rio Índios</strong><p>Atualizada há 4 minutos</p></div></div>${badge('Atual','good')}</li><li class="list-row"><div class="row-main"><span class="source-dot stale"></span><div><strong class="small">Simulador de chuva</strong><p>Último exemplo há 14 minutos</p></div></div>${badge('Desatualizada','warn')}</li></ul></section><section class="card card-pad"><div class="card-head"><div><h2>Ações recentes</h2><p class="small muted">Eventos técnicos sem dados pessoais</p></div><button class="button button-quiet" data-go="audit">Abrir auditoria →</button></div><div class="timeline"><div class="timeline-item"><strong class="small">Alerta sintético aguardando triagem</strong><p>Hoje às 15h21 · Sistema</p></div><div class="timeline-item"><strong class="small">Leitura de demonstração recebida</strong><p>Hoje às 15h20 · Fonte sintética</p></div><div class="timeline-item"><strong class="small">Operador de demonstração entrou</strong><p>Hoje às 15h04 · Autenticação</p></div></div></section></div>
+    </section>`;
+    const monitoringPage = `<section class="screen" data-screen="monitoring">
+      ${pageHeading('Observações sintéticas','Monitoramento por região','A atualização acima de 10 minutos deve ser sinalizada; falhas de fonte não criam valores substitutos.')}
+      <div class="notice"><span class="notice-icon">i</span><div><strong>Simulador local</strong><div class="small">Leituras, horários e regiões são fictícios. Ainda não há fontes oficiais autorizadas conectadas.</div></div></div><div class="spacer-16"></div>
+      <div class="grid grid-3"><article class="card source-card"><span class="source-dot"></span><div><strong class="small">Rio Índios · centro</strong><p class="tiny muted" style="margin:3px 0 0">Nível · 1,82 m · às 15h20</p></div>${badge('4 min','good')}</article><article class="card source-card"><span class="source-dot stale"></span><div><strong class="small">Chuva · estação demo</strong><p class="tiny muted" style="margin:3px 0 0">Precipitação · 46 mm · às 15h06</p></div>${badge('14 min','warn')}</article><article class="card source-card"><span class="source-dot stale"></span><div><strong class="small">Vento · estação demo</strong><p class="tiny muted" style="margin:3px 0 0">Sem atualização disponível</p></div>${badge('Falha simulada','error')}</article></div><div class="spacer-16"></div>
+      <section class="card card-pad"><div class="card-head"><div><h2>Precipitação sintética</h2><p class="small muted">Últimas 6 horas · milímetros · série de demonstração</p></div><span class="tag">Presidente Getúlio/SC</span></div>${chart}</section><div class="spacer-16"></div><section class="card card-pad"><div class="card-head"><div><h2>Leituras recentes</h2><p class="small muted">Valor original e hora de observação</p></div></div><div class="table-wrap"><table><thead><tr><th>Variável</th><th>Região</th><th>Valor</th><th>Observado</th><th>Estado</th></tr></thead><tbody><tr><td data-label="Variável">Nível do rio</td><td data-label="Região">Rio Índios · centro</td><td data-label="Valor">1,82 m</td><td data-label="Observado">15h20</td><td data-label="Estado">${badge('Atual','good')}</td></tr><tr><td data-label="Variável">Precipitação acumulada</td><td data-label="Região">Estação demonstrativa</td><td data-label="Valor">46 mm</td><td data-label="Observado">15h06</td><td data-label="Estado">${badge('Desatualizada','warn')}</td></tr></tbody></table></div></section>
+    </section>`;
+    const queuePage = `<section class="screen" data-screen="queue">
+      ${pageHeading('Revisão humana','Fila de alertas','Cada candidato é revisado por uma pessoa autorizada. A interface não publica nem envia automaticamente.')}
+      <div class="actions" style="margin-bottom:16px"><button class="button button-outline" aria-pressed="true">Todos <span class="tag">3</span></button><button class="button button-quiet">Aguardando triagem <span class="tag">2</span></button><button class="button button-quiet">Em análise <span class="tag">1</span></button><button class="button button-quiet">Histórico</button></div>
+      <div class="notice notice-info"><span class="notice-icon">i</span><div><strong>Exemplos sintéticos</strong><div class="small">Os itens não representam alertas oficiais ou condições atuais.</div></div></div><div class="spacer-16"></div>
+      <ul class="list"><li class="card card-pad"><div class="card-head"><div class="row-main"><div class="row-icon">${icon.rain}</div><div><div class="actions">${badge('Aguardando triagem','warn')}<span class="tag">Novo</span></div><h2 style="margin-top:9px">Exemplo de chuva intensa — região central</h2><p class="small muted">Gerado às 15h21 · expira amanhã às 15h21 · origem sintética</p></div></div><button class="button button-outline" data-go="audit">Histórico</button></div><p class="small">Exemplo para validar a fila e o fluxo de revisão. Confirme os dados antes de decidir.</p><div class="actions"><button class="button button-primary" data-message="Alerta sintético assumido para revisão.">Assumir análise</button><button class="button button-outline" data-go="editor">Abrir detalhes</button></div></li><li class="card card-pad"><div class="card-head"><div class="row-main"><div class="row-icon">${icon.river}</div><div><div class="actions">${badge('Em análise','info')}<span class="tag">Operador sintético</span></div><h2 style="margin-top:9px">Exemplo de elevação de nível — Rio Índios</h2><p class="small muted">Gerado às 14h48 · expira amanhã às 14h48 · origem sintética</p></div></div><button class="button button-outline" data-go="audit">Histórico</button></div><p class="small">Um operador assumiu este item. As ações devem continuar disponíveis apenas conforme a API autorizar.</p><div class="actions"><button class="button button-primary" data-go="editor">Revisar comunicado</button><button class="button button-outline" data-message="A reprovação de exemplo requer justificativa e autorização da API.">Reprovar</button></div></li></ul>
+      <div class="spacer-16"></div><div class="notice"><span class="notice-icon">◷</span><div><strong>Expiração</strong><div class="small">O estado muda 24 horas após a geração. O histórico de ações permanece disponível.</div></div></div>
+    </section>`;
+    const editorPage = `<section class="screen" data-screen="editor">
+      ${pageHeading('Conteúdo sob revisão','Comunicado sintético','A versão mostrada é uma prévia. Apenas conteúdo aprovado pode ser exportado; compartilhamento externo é iniciado manualmente pelo operador.')}
+      <div class="notice notice-info"><span class="notice-icon">i</span><div><strong>Somente demonstração</strong><div class="small">Os campos não salvam nem alteram o alerta. O texto aprovado deve ser revisado por operador.</div></div></div><div class="spacer-16"></div>
+      <div class="grid grid-2"><section class="card card-pad"><div class="card-head"><div><h2>Versão em edição</h2><p class="small muted">Alerta sintético · rascunho da mensagem</p></div>${badge('Rascunho','warn')}</div><div class="form-grid"><label class="field field-full"><span class="field-label">Título</span><input value="Atenção para chuva intensa — demonstração" /></label><label class="field field-full"><span class="field-label">Mensagem</span><textarea>Exemplo de texto para demonstrar a revisão do comunicado. Esta mensagem não corresponde a uma orientação oficial.</textarea></label><label class="field"><span class="field-label">Validade</span><input value="24 horas após geração" readonly /></label><label class="field"><span class="field-label">Região sintética</span><input value="Presidente Getúlio/SC" readonly /></label></div><div class="actions" style="margin-top:18px"><button class="button button-primary" data-message="Prévia atualizada no protótipo; nenhum dado foi salvo.">Atualizar prévia</button><button class="button button-outline" data-go="queue">Voltar à fila</button></div><p class="field-hint" style="margin-top:12px">A aprovação mantém revisão humana e auditoria. O protótipo não altera o estado.</p></section><section class="card card-pad"><div class="card-head"><div><h2>Prévia do arquivo</h2><p class="small muted">Arte do comunicado aprovado · exemplo sintético</p></div></div><div class="poster-preview"><div class="poster-head"><strong>ATENÇÃO · DEMONSTRAÇÃO</strong><span class="tiny">Exemplo de chuva intensa</span></div><div class="poster-body"><div class="poster-block"><span style="font-size:24px">∿</span><span>Conteúdo fictício para revisar hierarquia, leitura e espaços.</span></div><div class="poster-block"><span style="font-size:24px">≋</span><span>Valores sintéticos · não representam condição atual.</span></div><div class="notice" style="padding:10px;font-size:11px">Este protótipo não emite alertas oficiais.</div></div><div class="poster-foot">AlertaSC · Presidente Getúlio/SC · demonstração</div></div><div class="actions" style="justify-content:center;margin-top:14px"><button class="button button-primary" data-message="Download apenas demonstrativo; nenhum arquivo foi gerado.">Baixar PNG/JPEG</button><button class="button button-outline" data-message="Compartilhamento manual demonstrativo; nada foi publicado.">Compartilhar manualmente</button></div></section></div>
+    </section>`;
+    const auditPage = `<section class="screen" data-screen="audit">
+      ${pageHeading('Rastreabilidade','Histórico e auditoria','Registro cronológico de ações operacionais, sem credenciais, contatos ou dados pessoais de cidadãos.')}
+      <div class="grid grid-3"><article class="card metric"><div class="metric-top"><span>Eventos do período</span><span class="metric-icon">${icon.clock}</span></div><div class="metric-value">18</div><div class="metric-foot">Dados de demonstração</div></article><article class="card metric"><div class="metric-top"><span>Alertas preservados</span><span class="metric-icon">${icon.file}</span></div><div class="metric-value">6</div><div class="metric-foot">Inclui alertas expirados</div></article><article class="card metric"><div class="metric-top"><span>Dados sensíveis</span><span class="metric-icon">${icon.shield}</span></div><div class="metric-value">0</div><div class="metric-foot">Não exibidos nesta trilha</div></article></div><div class="spacer-16"></div><section class="card card-pad"><div class="card-head"><div><h2>Eventos recentes</h2><p class="small muted">Atribuição por ID técnico de operador ou sistema</p></div><button class="button button-outline">Filtrar período</button></div><div class="timeline"><div class="timeline-item"><strong class="small">Alerta sintético assumido para análise</strong><p>ALE-DEMO-0042 · hoje às 15h25 · operador sintético</p></div><div class="timeline-item"><strong class="small">Estado alterado para Em análise</strong><p>ALE-DEMO-0042 · hoje às 15h25 · justificativa vinculada ao evento</p></div><div class="timeline-item"><strong class="small">Leitura de demonstração recebida</strong><p>Estação sintética · hoje às 15h20 · sem identificador pessoal</p></div><div class="timeline-item"><strong class="small">Alerta anterior expirou</strong><p>ALE-DEMO-0039 · ontem às 15h02 · histórico preservado</p></div></div></section>
+    </section>`;
+    const operatorsPage = `<section class="screen" data-screen="operators">
+      ${pageHeading('Administração','Operadores sintéticos','Contas de demonstração provisionadas localmente; não há cadastro público de operadores.', '<button class="button button-primary" data-message="Provisionamento fictício indisponível no protótipo visual.">Provisionar demonstração</button>')}
+      <div class="notice"><span class="notice-icon">i</span><div><strong>Contas autorizadas</strong><div class="small">Operadores reais são indicados pela Defesa Civil municipal e dependem de validação institucional.</div></div></div><div class="spacer-16"></div><section class="card card-pad"><div class="card-head"><div><h2>Contas de teste</h2><p class="small muted">Apenas identidades sintéticas</p></div>${badge('2 ativas','good')}</div><div class="table-wrap"><table><thead><tr><th>Identificador técnico</th><th>Papel</th><th>Estado</th><th>Último acesso</th><th>Ação</th></tr></thead><tbody><tr><td data-label="Identificador">operator-demo-01</td><td data-label="Papel">ADMIN · OPERATOR</td><td data-label="Estado">${badge('Ativo','good')}</td><td data-label="Último acesso">Hoje, 15h04</td><td data-label="Ação"><button class="button button-outline" data-message="Ação administrativa só pode ser executada pela API.">Gerenciar</button></td></tr><tr><td data-label="Identificador">operator-demo-02</td><td data-label="Papel">OPERATOR</td><td data-label="Estado">${badge('Ativo','good')}</td><td data-label="Último acesso">Ontem, 11h22</td><td data-label="Ação"><button class="button button-outline" data-message="Ação administrativa só pode ser executada pela API.">Gerenciar</button></td></tr></tbody></table></div></section>
+    </section>`;
+    const citizensAdminPage = `<section class="screen" data-screen="citizens-admin">
+      ${pageHeading('Administração','Cadastros sintéticos','Visão de demonstração das preferências voluntárias. Nenhum contato ou dado real de cidadão é mostrado.', '<button class="button button-outline" data-message="Cadastro voluntário ocorre no portal do cidadão.">Abrir portal do cidadão</button>')}
+      <div class="notice"><span class="notice-icon">i</span><div><strong>Privacidade por padrão</strong><div class="small">A remoção deve bloquear imediatamente futuras tentativas e apagar os dados da base ativa.</div></div></div><div class="spacer-16"></div><section class="card card-pad"><div class="card-head"><div><h2>Preferências sintéticas</h2><p class="small muted">Somente status de consentimento e elegibilidade necessários à operação</p></div>${badge('3 demonstrações','info')}</div><div class="table-wrap"><table><thead><tr><th>Identificador sintético</th><th>Município</th><th>Preferências</th><th>Consentimento</th><th>Elegibilidade</th></tr></thead><tbody><tr><td data-label="Identificador">resident-demo-01</td><td data-label="Município">Presidente Getúlio/SC</td><td data-label="Preferências">Chuva intensa · Inundação</td><td data-label="Consentimento">${badge('Ativo','good')}</td><td data-label="Elegibilidade">${badge('Simulado','info')}</td></tr><tr><td data-label="Identificador">resident-demo-02</td><td data-label="Município">Presidente Getúlio/SC</td><td data-label="Preferências">Chuva intensa</td><td data-label="Consentimento">${badge('Removido','warn')}</td><td data-label="Elegibilidade">${badge('Bloqueado','error')}</td></tr></tbody></table></div></section>
+    </section>`;
+    const screenHtml = { public: publicPage, citizen: citizenPage, feedback: feedbackPage, login: loginPage, 'operator-home': operatorHome, monitoring: monitoringPage, queue: queuePage, editor: editorPage, audit: auditPage, operators: operatorsPage, 'citizens-admin': citizensAdminPage };
+    const picker = document.querySelector('#screen-picker');
+    const host = document.querySelector('#screen-host');
+    const topNav = document.querySelector('#main-nav');
+    const bottomNav = document.querySelector('#bottom-nav');
+    const roleChip = document.querySelector('#role-chip');
+    function go(id) {
+      picker.value = id;
+      const metadata = screens[id];
+      host.innerHTML = screenHtml[id];
+      roleChip.textContent = metadata.area === 'operator' ? 'Área do operador' : metadata.area === 'citizen' ? 'Área do cidadão' : 'Área pública';
+      const links = metadata.nav;
+      bottomNav.style.gridTemplateColumns = `repeat(${Math.min(links.length, 4)}, minmax(0, 1fr))`;
+      topNav.innerHTML = links.map(([target, glyph, label]) => `<button type="button" class="nav-button" data-go="${target}" aria-current="${target === id ? 'page' : 'false'}"><span aria-hidden="true">${glyph}</span> ${label}</button>`).join('');
+      bottomNav.innerHTML = links.slice(0,4).map(([target,glyph,label]) => `<button type="button" data-go="${target}" aria-current="${target === id ? 'page' : 'false'}"><span aria-hidden="true">${glyph}</span><span>${label}</span></button>`).join('');
+      host.focus({ preventScroll: true });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    document.addEventListener('click', (event) => {
+      const target = event.target.closest('[data-go], [data-message]');
+      if (!target) return;
+      if (target.dataset.go) go(target.dataset.go);
+      if (target.dataset.message) window.alert(target.dataset.message);
+    });
+    picker.addEventListener('change', () => go(picker.value));
+    document.querySelector('#phone-preview').addEventListener('click', () => {
+      document.querySelector('#prototype-frame').classList.add('simulate-phone');
+      document.querySelector('#phone-preview').setAttribute('aria-pressed','true');
+      document.querySelector('#desktop-preview').setAttribute('aria-pressed','false');
+    });
+    document.querySelector('#desktop-preview').addEventListener('click', () => {
+      document.querySelector('#prototype-frame').classList.remove('simulate-phone');
+      document.querySelector('#phone-preview').setAttribute('aria-pressed','false');
+      document.querySelector('#desktop-preview').setAttribute('aria-pressed','true');
+    });
+    go('public');
+  </script>
+</body>
+</html>
