@@ -85,6 +85,15 @@ Entre com o operador sintético criado pelo seed. A aba de alertas exige que o s
 - A aba **Operadores sintéticos** permite que um administrador provisione uma conta fictícia e desative contas sintéticas. As credenciais de provisionamento aparecem uma vez na interface e não são registradas nos logs. Nunca use essa função para criar uma conta real nesta fase.
 - A aba **Cadastros sintéticos** é uma ferramenta administrativa de demonstração; o portal do cidadão representa o cadastro voluntário, edição de preferências, consentimento e remoção, apenas com dados fictícios.
 
+### Arte visual do comunicado aprovado
+
+- Depois de aprovar um alerta sintético ainda válido, a fila mostra **Baixar comunicado em PNG** e **Baixar comunicado em JPEG**. Alertas aguardando triagem, em análise, reprovados ou expirados não podem ser exportados.
+- A arte vetorial usa o título, resumo aprovado, área, leituras sintéticas e horários do próprio alerta. O layout segue a referência visual aprovada: cabeçalho laranja, cartões informativos, ilustrações de rio/chuva/aviso e rodapé municipal com contatos 199 e 193. A marca é textual (AlertaSC); o repositório não contém o arquivo oficial de identidade visual da Defesa Civil.
+- O arquivo é rasterizado localmente no navegador em alta resolução. O SVG é construído com escaping de texto e não carrega fontes, imagens ou scripts externos.
+- A imagem recebe identificação destacada de demonstração e avisa que os dados são sintéticos e não representam condição atual. O download não chama Instagram, Telegram ou qualquer serviço externo e não publica automaticamente.
+- **Compartilhar manualmente** tenta abrir o seletor nativo de compartilhamento do dispositivo com o PNG. A pessoa operadora escolhe o aplicativo/destino e confirma; se o navegador não aceitar compartilhamento de arquivos, a imagem é baixada como alternativa. Cancelar o seletor não publica nada.
+- A arte reflete apenas os campos aprovados armazenados no alerta. Para a composição específica do exemplo — incluindo texto editável, previsão de chuva/vento e orientações estruturadas — essas informações precisam existir na versão aprovada do comunicado; a edição e versionamento desse conteúdo pertencem à ALE-20. Não se deve acrescentar à arte um valor que não esteja no alerta aprovado.
+
 As rotas de fixture, listagem e manutenção de contas sintéticas são bloqueadas em produção. O provisionamento real de operadores, a coleta de dados reais de cidadãos e a ativação institucional permanecem pendentes de validação conforme `docs/etapa-1-condicoes-produto.md`.
 
 A API desativa os endpoints de fixtures se `NODE_ENV=production` ou `PERSONAL_DATA_MODE` não for `synthetic`. O uso de dados pessoais reais requer a validação institucional definida em `docs/etapa-1-condicoes-produto.md`; este protótipo não habilita esse fluxo.

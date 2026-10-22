@@ -10,6 +10,8 @@ O **AlertaSC** é uma plataforma para coletar, consolidar e disseminar informaç
 
 A base executável atual usa exclusivamente dados sintéticos. Siga [o guia de configuração local](docs/etapa-2-execucao-local.md) para preparar o PostgreSQL/PostGIS, executar migrações, criar o operador sintético e iniciar frontend, API e worker.
 
+Na fila, comunicados sintéticos aprovados e ainda válidos podem ser exportados em PNG/JPEG ou enviados ao seletor nativo para compartilhamento manual; veja [como a arte de demonstração é composta e quais limites respeita](docs/etapa-2-execucao-local.md#arte-visual-do-comunicado-aprovado). A aplicação não publica automaticamente em redes sociais.
+
 O primeiro piloto será realizado em **Presidente Getúlio/SC**, com uma arquitetura preparada para expansão aos demais municípios do estado. A plataforma deverá reduzir o tempo entre a publicação de um aviso oficial e sua comunicação à população, mantendo revisão humana, rastreabilidade e histórico de todas as decisões.
 
 ## Objetivos

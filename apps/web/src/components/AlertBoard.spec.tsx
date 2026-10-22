@@ -122,6 +122,51 @@ describe('AlertBoard review workflow', () => {
     expect(await screen.findByText(/Nenhuma mensagem foi enviada/)).toBeDefined();
   });
 
+  it('offers PNG and JPEG downloads only for an approved, non-expired alert', async () => {
+    const user = userEvent.setup();
+    const onExportPoster = vi.fn().mockResolvedValue(undefined);
+    const approved = { ...alert, status: 'APPROVED', expiresAt: '2099-10-22T12:00:00.000Z' };
+    render(<AlertBoard lockGranted alerts={[approved]} {...callbacks()} onExportPoster={onExportPoster} />);
+
+    await user.click(screen.getByText('Pré-visualizar arte do comunicado'));
+    expect(screen.getByRole('img', { name: 'Prévia do comunicado sintético aprovado' })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Baixar comunicado em PNG' }));
+    await waitFor(() => expect(onExportPoster).toHaveBeenCalledWith(approved, 'png'));
+    await user.click(screen.getByRole('button', { name: 'Baixar comunicado em JPEG' }));
+    await waitFor(() => expect(onExportPoster).toHaveBeenCalledWith(approved, 'jpeg'));
+  });
+
+  it.each([
+    ['Aguardando Triagem', 'AWAITING_TRIAGE'],
+    ['Em Análise', 'IN_ANALYSIS'],
+    ['Reprovado', 'REJECTED'],
+    ['Expirado', 'EXPIRED'],
+  ])('does not offer a poster download for %s alerts', (_label, status) => {
+    const unavailable = { ...alert, status, expiresAt: '2099-10-22T12:00:00.000Z' };
+    render(<AlertBoard lockGranted alerts={[unavailable]} {...callbacks()} />);
+    expect(screen.queryByRole('button', { name: /Baixar comunicado em/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compartilhar manualmente' })).toBeNull();
+  });
+
+  it('does not offer a poster download after its validity expires, even if its stored state is stale', () => {
+    const staleApproval = { ...alert, status: 'APPROVED', expiresAt: '2020-10-22T12:00:00.000Z' };
+    render(<AlertBoard lockGranted alerts={[staleApproval]} {...callbacks()} />);
+    expect(screen.queryByRole('button', { name: /Baixar comunicado em/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Compartilhar manualmente' })).toBeNull();
+  });
+
+  it('offers manual sharing for an approved alert and leaves the final publish confirmation to the operator', async () => {
+    const user = userEvent.setup();
+    const onSharePoster = vi.fn().mockResolvedValue('shared');
+    const approved = { ...alert, status: 'APPROVED', expiresAt: '2099-10-22T12:00:00.000Z' };
+    render(<AlertBoard lockGranted alerts={[approved]} {...callbacks()} onSharePoster={onSharePoster} />);
+
+    await user.click(screen.getByRole('button', { name: 'Compartilhar manualmente' }));
+
+    await waitFor(() => expect(onSharePoster).toHaveBeenCalledWith(approved));
+    expect(await screen.findByText(/revise o destino e confirme a publicação/)).toBeDefined();
+  });
+
   it('allows only an administrator with an occupied-tab error to submit an audited recovery reason', async () => {
     const user = userEvent.setup();
     const onRecover = vi.fn().mockResolvedValue(undefined);
