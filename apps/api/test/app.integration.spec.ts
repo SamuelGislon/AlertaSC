@@ -82,6 +82,118 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect(history).toContainEqual(expect.objectContaining({ action: 'SYNTHETIC_ALERT_GENERATED' }));
   });
 
+  it('seeds the canonical synthetic flood scenario for Rio Índios', async () => {
+    const alert = await database.query(
+      'SELECT id, title, summary, area_label, synthetic FROM alerts WHERE id = $1',
+      [fixtures.alertId],
+    );
+    expect(alert[0]).toEqual(expect.objectContaining({
+      title: 'Atenção para cheias — Rio Índios',
+      summary: expect.stringMatching(/sintétic|fictíc/i),
+      area_label: expect.stringMatching(/Rio Índios.*Presidente Getúlio|Presidente Getúlio.*Rio Índios/i),
+      synthetic: true,
+    }));
+
+    const riverReadings = await database.query(
+      `SELECT metric_label, normalized_value, normalized_unit, synthetic
+         FROM alert_observations
+        WHERE alert_id = $1 AND metric_label = 'Nível do Rio Índios'`,
+      [fixtures.alertId],
+    );
+    expect(riverReadings).toEqual([expect.objectContaining({
+      metric_label: 'Nível do Rio Índios',
+      normalized_value: '4.5',
+      normalized_unit: 'm',
+      synthetic: true,
+    })]);
+
+    expect(await ensureSyntheticReviewAlert(database)).toBe(false);
+    expect(await database.query(
+      "SELECT id FROM alerts WHERE synthetic = true AND status IN ('AWAITING_TRIAGE', 'IN_ANALYSIS') AND expires_at > now()",
+    )).toHaveLength(1);
+    expect(await database.query(
+      `SELECT id FROM alert_observations WHERE alert_id = $1 AND metric_label = 'Nível do Rio Índios'`,
+      [fixtures.alertId],
+    )).toHaveLength(1);
+    expect(await database.query(
+      "SELECT id FROM audit_events WHERE entity_id = $1 AND action = 'SYNTHETIC_RIVER_LEVEL_EVIDENCE_ADDED'",
+      [fixtures.alertId],
+    )).toHaveLength(1);
+  });
+
+  it('upgrades an existing seed to the canonical synthetic flood scenario without duplicating history or evidence', async () => {
+    await database.query("UPDATE alerts SET status = 'APPROVED' WHERE id = $1", [fixtures.alertId]);
+    const legacyAlertId = '11111111-1111-4111-8111-111111111111';
+    const generatedAt = new Date(Date.now() - 60 * 60 * 1_000);
+    const expiresAt = new Date(generatedAt.getTime() + 24 * 60 * 60 * 1_000);
+    await database.query(
+      `INSERT INTO alerts
+        (id, title, summary, source_label, area_label, status, generated_at, expires_at, created_by, synthetic,
+         municipality_code, event_type)
+       VALUES ($1, 'Exemplo sintético — chuva intensa', 'Fixture antiga de desenvolvimento local.',
+         'Fixture local — estação fictícia PG-01', 'Presidente Getúlio/SC — área fictícia',
+         'AWAITING_TRIAGE', $2, $3, $4, true, '4214001', 'chuva_intensa')`,
+      [legacyAlertId, generatedAt, expiresAt, fixtures.admin.id],
+    );
+    await database.query(
+      `INSERT INTO alert_observations
+        (id, alert_id, source_label, metric_label, raw_value, raw_unit, normalized_value, normalized_unit,
+         observed_at, area_label, synthetic)
+       VALUES ('22222222-2222-4222-8222-222222222222', $1, 'Fixture local — estação fictícia PG-01',
+         'Precipitação acumulada em 1 hora', 5.2, 'cm', 52, 'mm', $2,
+         'Presidente Getúlio/SC — área fictícia', true)`,
+      [legacyAlertId, generatedAt],
+    );
+    await database.query(
+      `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, occurred_at, new_state, metadata)
+       VALUES ('33333333-3333-4333-8333-333333333333', NULL, 'SYNTHETIC_ALERT_GENERATED', 'alert', $1, $2,
+         'AWAITING_TRIAGE', '{"synthetic":true,"stage":"candidate"}'::jsonb)`,
+      [legacyAlertId, new Date(generatedAt.getTime() + 2)],
+    );
+    const historyBefore = await database.query(
+      'SELECT id, action, metadata FROM audit_events WHERE entity_id = $1 ORDER BY occurred_at, id',
+      [legacyAlertId],
+    );
+
+    expect(await ensureSyntheticReviewAlert(database)).toBe(false);
+
+    const upgraded = await database.query(
+      'SELECT title, summary, area_label, synthetic FROM alerts WHERE id = $1',
+      [legacyAlertId],
+    );
+    expect(upgraded[0]).toEqual(expect.objectContaining({
+      title: 'Atenção para cheias — Rio Índios',
+      summary: expect.stringMatching(/sintétic|fictíc/i),
+      area_label: expect.stringMatching(/Rio Índios.*Presidente Getúlio|Presidente Getúlio.*Rio Índios/i),
+      synthetic: true,
+    }));
+
+    const afterFirstUpgrade = await database.query(
+      'SELECT id, action, metadata FROM audit_events WHERE entity_id = $1 ORDER BY occurred_at, id',
+      [legacyAlertId],
+    );
+    expect(afterFirstUpgrade).toEqual(expect.arrayContaining(historyBefore));
+    expect(await database.query(
+      `SELECT id FROM alert_observations WHERE alert_id = $1 AND metric_label = 'Nível do Rio Índios'
+         AND normalized_value = 4.5 AND normalized_unit = 'm' AND synthetic = true`,
+      [legacyAlertId],
+    )).toHaveLength(1);
+    expect(await database.query(
+      "SELECT id FROM audit_events WHERE entity_id = $1 AND action = 'SYNTHETIC_RIVER_LEVEL_EVIDENCE_ADDED'",
+      [legacyAlertId],
+    )).toHaveLength(1);
+
+    expect(await ensureSyntheticReviewAlert(database)).toBe(false);
+    const afterSecondUpgrade = await database.query(
+      'SELECT id, action, metadata FROM audit_events WHERE entity_id = $1 ORDER BY occurred_at, id',
+      [legacyAlertId],
+    );
+    expect(afterSecondUpgrade).toEqual(afterFirstUpgrade);
+    expect(await database.query(
+      "SELECT id FROM alerts WHERE synthetic = true AND status IN ('AWAITING_TRIAGE', 'IN_ANALYSIS') AND expires_at > now()",
+    )).toHaveLength(1);
+  });
+
   it('authenticates synthetic operators and never reveals credentials on failure', async () => {
     const valid = await login();
     expect(valid.accessToken).toEqual(expect.any(String));
@@ -296,6 +408,16 @@ describe('AlertaSC API with PostgreSQL', () => {
         rawUnit: 'cm',
         normalizedValue: 52,
         normalizedUnit: 'mm',
+        synthetic: true,
+      }),
+      expect.objectContaining({
+        source: 'Fixture local — régua fictícia RI-01',
+        metric: 'Nível do Rio Índios',
+        rawValue: 4.5,
+        rawUnit: 'm',
+        normalizedValue: 4.5,
+        normalizedUnit: 'm',
+        area: 'Rio Índios — Presidente Getúlio/SC',
         synthetic: true,
       }),
     ]);

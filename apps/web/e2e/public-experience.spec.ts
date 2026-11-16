@@ -18,6 +18,7 @@ test('keeps the public panel within the five supported viewport widths', async (
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
+    await expect(page).toHaveTitle('Clima em Alerta — demonstração local');
     await expect(page.getByRole('heading', { name: /Acompanhe as condições em Presidente Getúlio/ })).toBeVisible();
 
     const layout = await page.evaluate(() => ({
@@ -56,7 +57,7 @@ test('moves between public, synthetic citizen, feedback and operator sign-in vie
 
   await page.getByRole('button', { name: 'Início', exact: true }).click();
   await page.getByRole('button', { name: 'Acesso do operador' }).click();
-  await expect(page.getByRole('heading', { name: 'Entrar no AlertaSC' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Entrar no Clima em Alerta' })).toBeVisible();
   await expect(page.getByText(/Não há cadastro público de operadores/)).toBeVisible();
 });
 
@@ -147,5 +148,143 @@ test('keeps the authenticated operator shell and its synthetic screens responsiv
       }));
       expect(width.documentWidth, JSON.stringify(width.overflowingElements)).toBeLessThanOrEqual(width.visibleWidth);
     }
+  }
+});
+
+test('demonstrates one Rio Índios alert from operator approval to public preview and poster download', async ({ page }) => {
+  let alertStatus = 'AWAITING_TRIAGE';
+  const demoAlert = () => ({
+    id: 'rio-indios-video-demo',
+    title: 'Atenção para cheias — Rio Índios',
+    summary: 'Demonstração sintética. Os valores abaixo são fictícios e não representam observações reais.',
+    source: 'Fixture local — estação fictícia PG-01',
+    area: 'Rio Índios — Presidente Getúlio/SC',
+    status: alertStatus,
+    generatedAt: '2026-11-16T12:00:00.000Z',
+    expiresAt: '2099-11-17T12:00:00.000Z',
+    synthetic: true,
+    relatedReadings: [
+      {
+        source: 'Fixture local — estação fictícia PG-01',
+        metric: 'Precipitação acumulada em 1 hora',
+        rawValue: 5.2,
+        rawUnit: 'cm',
+        normalizedValue: 52,
+        normalizedUnit: 'mm',
+        observedAt: '2026-11-16T11:50:00.000Z',
+        area: 'Rio Índios — Presidente Getúlio/SC',
+        synthetic: true,
+      },
+      {
+        source: 'Fixture local — régua fictícia RI-01',
+        metric: 'Nível do Rio Índios',
+        rawValue: 4.5,
+        rawUnit: 'm',
+        normalizedValue: 4.5,
+        normalizedUnit: 'm',
+        observedAt: '2026-11-16T11:55:00.000Z',
+        area: 'Rio Índios — Presidente Getúlio/SC',
+        synthetic: true,
+      },
+    ],
+  });
+
+  await page.route('**/api/v1/auth/login', (route) => route.fulfill({
+    status: 201,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      // This mocked API flow has no Socket.IO server; an empty token leaves the granted demo lock stable.
+      accessToken: '',
+      operator: { id: 'operator-video-demo', roles: ['OPERATOR'] },
+    }),
+  }));
+  await page.route('**/api/v1/auth/logout', (route) => route.fulfill({ status: 204 }));
+  await page.route('**/api/v1/alert-tab/acquire', (route) => route.fulfill({
+    status: 201, contentType: 'application/json', body: JSON.stringify({ acquired: true }),
+  }));
+  await page.route('**/api/v1/alert-tab/release', (route) => route.fulfill({
+    status: 201, contentType: 'application/json', body: JSON.stringify({ released: true }),
+  }));
+  await page.route('**/api/v1/alerts', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify([demoAlert()]),
+  }));
+  await page.route('**/api/v1/alerts/*/claim', (route) => route.fulfill({
+    status: 201, contentType: 'application/json', body: JSON.stringify({ claimed: true }),
+  }));
+  await page.route('**/api/v1/alerts/*/transition', (route) => {
+    alertStatus = route.request().postDataJSON().status;
+    return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ status: alertStatus }) });
+  });
+  await page.route('**/api/v1/alerts/*/audit', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify([{
+      id: 'audit-video-demo-approved',
+      actorId: 'operator-video-demo',
+      action: 'ALERT_STATUS_CHANGED',
+      occurredAt: '2026-11-16T13:00:00.000Z',
+      previousState: 'IN_ANALYSIS',
+      newState: 'APPROVED',
+      reason: 'Revisão sintética concluída para demonstração.',
+      metadata: { synthetic: true },
+    }]),
+  }));
+  await page.route('http://localhost:3001/**', (route) => route.abort());
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1440, height: 900 },
+  ]) {
+    alertStatus = 'AWAITING_TRIAGE';
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await expect(page).toHaveTitle('Clima em Alerta — demonstração local');
+    await expect(page.getByRole('button', { name: 'Ver no painel público' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Acesso do operador' }).click();
+    await expect(page.getByRole('heading', { name: 'Entrar no Clima em Alerta' })).toBeVisible();
+    await page.getByLabel('CPF').fill('00000000000');
+    await page.getByLabel('Senha').fill('e2e-synthetic-password');
+    await page.getByRole('button', { name: 'Entrar' }).click();
+    await expect(page.getByRole('heading', { name: 'Fila de alertas' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Atenção para cheias — Rio Índios' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Assumir alerta' }).click();
+    await expect(page.getByLabel('Motivo da decisão')).toBeVisible();
+    await page.getByLabel('Motivo da decisão').fill('Revisão sintética concluída para demonstração.');
+    await page.getByRole('button', { name: 'Aprovar' }).click();
+    await expect(page.getByText('Aprovado', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Histórico da auditoria' }).click();
+    await expect(page.getByText('Estado do alerta alterado', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Motivo: Revisão sintética concluída para demonstração\./)).toBeVisible();
+    await page.getByRole('button', { name: 'Ver no painel público' }).click();
+    await expect(page.getByRole('heading', { name: 'Atenção para cheias — Rio Índios' })).toBeVisible();
+    await expect(page.getByText('Rio Índios — Presidente Getúlio/SC')).toBeVisible();
+    await expect(page.getByText('4,5 m')).toBeVisible();
+    await expect(page.getByText(/não representa observações meteorológicas reais/)).toBeVisible();
+    await expect(page.getByText('Fixture local — régua fictícia RI-01')).toHaveCount(0);
+    await expect(page.getByText('Estado do alerta alterado', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('operator-video-demo', { exact: true })).toHaveCount(0);
+
+    const previewWidth = await page.evaluate(() => ({
+      document: document.documentElement.scrollWidth,
+      viewport: document.documentElement.clientWidth,
+    }));
+    expect(previewWidth.document).toBeLessThanOrEqual(previewWidth.viewport);
+    await page.getByRole('button', { name: 'Voltar à fila' }).click();
+    await expect(page.getByRole('heading', { name: 'Fila de alertas' })).toBeVisible();
+    await page.getByRole('button', { name: 'Pré-visualizar arte do comunicado' }).click();
+    await expect(page.getByRole('dialog', { name: /Pré-visualização do comunicado/ })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Prévia do comunicado sintético aprovado' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Mais ações do comunicado' }).click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('menuitem', { name: 'Baixar comunicado em PNG' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/alertasc-comunicado-sintetico-.*\.png/);
+
+    await page.getByRole('button', { name: 'Sair' }).click();
+    await expect(page.getByRole('heading', { name: /Acompanhe as condições em Presidente Getúlio/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Atenção para cheias — Rio Índios' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Ver no painel público' })).toHaveCount(0);
   }
 });

@@ -9,6 +9,12 @@ export interface SyntheticAccountFixture {
   password: string;
 }
 
+const RIO_INDIOS_DEMO = {
+  title: 'Atenção para cheias — Rio Índios',
+  summary: 'Demonstração sintética: cenário fictício de cheia. Os valores não representam observações reais.',
+  area: 'Rio Índios — Presidente Getúlio/SC',
+} as const;
+
 export async function resetSyntheticTestDatabase(database: DataSource): Promise<void> {
   const url = new URL(process.env.DATABASE_TEST_URL || process.env.DATABASE_URL || '');
   if (!url.pathname.endsWith('_test')) throw new Error('Refusing to reset a database that does not end in _test');
@@ -33,10 +39,9 @@ export async function seedSyntheticFixtures(database: DataSource): Promise<{
     `INSERT INTO alerts
       (id, title, summary, source_label, area_label, status, generated_at, expires_at, created_by, synthetic,
        municipality_code, event_type)
-     VALUES ($1, 'Chuva intensa — dado sintético', 'Alerta fictício para desenvolvimento local.',
-       'Fixture local — estação fictícia PG-01', 'Presidente Getúlio/SC — região fictícia',
-       'AWAITING_TRIAGE', $2, $3, $4, true, '4214001', 'chuva_intensa')`,
-    [alertId, generatedAt, expiresAt, admin.id],
+     VALUES ($1, $2, $3, 'Fixture local — estação fictícia PG-01', $4,
+       'AWAITING_TRIAGE', $5, $6, $7, true, '4214001', 'chuva_intensa')`,
+    [alertId, RIO_INDIOS_DEMO.title, RIO_INDIOS_DEMO.summary, RIO_INDIOS_DEMO.area, generatedAt, expiresAt, admin.id],
   );
   await recordSyntheticAlertLineage(database, alertId, generatedAt);
   return { admin, operator, alertId };
@@ -109,18 +114,24 @@ export async function ensureSyntheticReviewAlert(database: DataSource): Promise<
 
   const existing = await database.query(
     `SELECT id, generated_at FROM alerts
-      WHERE synthetic = true AND status IN ('AWAITING_TRIAGE', 'IN_ANALYSIS') AND expires_at > now()
+      WHERE synthetic = true AND source_label LIKE 'Fixture local%'
+        AND status IN ('AWAITING_TRIAGE', 'IN_ANALYSIS') AND expires_at > now()
       LIMIT 1`,
   );
   if (existing.length) {
-    const observations = await database.query(
-      'SELECT id FROM alert_observations WHERE alert_id = $1 LIMIT 1', [existing[0].id],
-    );
-    if (!observations.length) {
-      await database.transaction(async (manager) => {
+    await database.transaction(async (manager) => {
+      await manager.query(
+        'UPDATE alerts SET title = $2, summary = $3, area_label = $4 WHERE id = $1',
+        [existing[0].id, RIO_INDIOS_DEMO.title, RIO_INDIOS_DEMO.summary, RIO_INDIOS_DEMO.area],
+      );
+      const observations = await manager.query(
+        'SELECT id FROM alert_observations WHERE alert_id = $1 LIMIT 1', [existing[0].id],
+      );
+      if (!observations.length) {
         await recordSyntheticAlertEvidence(manager, existing[0].id, new Date(existing[0].generated_at));
-      });
-    }
+      }
+      await recordSyntheticRiverLevelEvidence(manager, existing[0].id, new Date(existing[0].generated_at));
+    });
     return false;
   }
   const operators = await database.query(
@@ -137,11 +148,10 @@ export async function ensureSyntheticReviewAlert(database: DataSource): Promise<
       `INSERT INTO alerts
         (id, title, summary, source_label, area_label, status, generated_at, expires_at, created_by, synthetic,
          municipality_code, event_type)
-       VALUES ($1, 'Exemplo sintético — chuva intensa',
-         'Situação fictícia para validar a base executável. Não representa risco observado.',
-         'Fixture local — estação fictícia PG-01', 'Presidente Getúlio/SC — área fictícia',
-         'AWAITING_TRIAGE', $2, $3, $4, true, '4214001', 'chuva_intensa')`,
-      [alertId, generatedAt, expiresAt, operators[0].id],
+       VALUES ($1, $2, $3, 'Fixture local — estação fictícia PG-01', $4,
+         'AWAITING_TRIAGE', $5, $6, $7, true, '4214001', 'chuva_intensa')`,
+      [alertId, RIO_INDIOS_DEMO.title, RIO_INDIOS_DEMO.summary, RIO_INDIOS_DEMO.area,
+        generatedAt, expiresAt, operators[0].id],
     );
     await recordSyntheticAlertLineage(manager, alertId, generatedAt);
   });
@@ -150,6 +160,7 @@ export async function ensureSyntheticReviewAlert(database: DataSource): Promise<
 
 async function recordSyntheticAlertLineage(executor: Pick<DataSource, 'query'>, alertId: string, observedAt: Date) {
   await recordSyntheticAlertEvidence(executor, alertId, observedAt);
+  await recordSyntheticRiverLevelEvidence(executor, alertId, observedAt);
   await executor.query(
     `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, occurred_at, new_state, metadata)
      VALUES ($1, NULL, 'SYNTHETIC_ALERT_GENERATED', 'alert', $2, $3, 'AWAITING_TRIAGE', '{"synthetic":true,"stage":"candidate"}'::jsonb)`,
@@ -185,4 +196,41 @@ async function recordSyntheticAlertEvidence(executor: Pick<DataSource, 'query'>,
       [randomUUID(), event.action, alertId, event.occurredAt, event.state, JSON.stringify(event.metadata)],
     );
   }
+}
+
+async function recordSyntheticRiverLevelEvidence(
+  executor: Pick<DataSource, 'query'>,
+  alertId: string,
+  observedAt: Date,
+): Promise<void> {
+  const metric = 'Nível do Rio Índios';
+  const source = 'Fixture local — régua fictícia RI-01';
+  const existing = await executor.query(
+    `SELECT id FROM alert_observations
+      WHERE alert_id = $1 AND metric_label = $2 AND normalized_value = 4.5
+        AND normalized_unit = 'm' AND synthetic = true
+      LIMIT 1`,
+    [alertId, metric],
+  );
+  if (existing.length) return;
+
+  await executor.query(
+    `INSERT INTO alert_observations
+      (id, alert_id, source_label, metric_label, raw_value, raw_unit, normalized_value, normalized_unit,
+       observed_at, area_label, synthetic)
+     VALUES ($1, $2, $3, $4, 4.5, 'm', 4.5, 'm', $5, $6, true)`,
+    [randomUUID(), alertId, source, metric, observedAt, RIO_INDIOS_DEMO.area],
+  );
+  await executor.query(
+    `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, occurred_at, metadata)
+     VALUES ($1, NULL, 'SYNTHETIC_RIVER_LEVEL_EVIDENCE_ADDED', 'alert', $2, $3, $4::jsonb)`,
+    [randomUUID(), alertId, new Date(), JSON.stringify({
+      synthetic: true,
+      stage: 'normalized',
+      source,
+      metric,
+      value: 4.5,
+      unit: 'm',
+    })],
+  );
 }

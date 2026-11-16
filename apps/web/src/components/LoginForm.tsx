@@ -26,7 +26,7 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
     <form onSubmit={submit} className="login-form">
       <Card className="surface-card login-card">
       <div>
-        <h1 className="text-2xl font-bold">Entrar no AlertaSC</h1>
+        <h1 className="text-2xl font-bold">Entrar no Clima em Alerta</h1>
         <p className="mt-1 text-sm text-slate-600">Acesso destinado à equipe municipal autorizada.</p>
       </div>
       <Field className="field">

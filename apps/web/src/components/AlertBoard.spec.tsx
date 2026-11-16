@@ -125,6 +125,27 @@ describe('AlertBoard review workflow', () => {
     expect(await screen.findByText(/Nenhuma mensagem foi enviada/)).toBeDefined();
   });
 
+  it('opens the public panel preview only for an approved alert within its validity', async () => {
+    const user = userEvent.setup();
+    const onViewPublicPreview = vi.fn();
+    const approved = { ...alert, status: 'APPROVED', expiresAt: '2099-10-22T12:00:00.000Z' };
+    render(<AlertBoard lockGranted alerts={[approved]} {...callbacks()} onViewPublicPreview={onViewPublicPreview} />);
+
+    await user.click(screen.getByRole('button', { name: 'Ver no painel público' }));
+    expect(onViewPublicPreview).toHaveBeenCalledTimes(1);
+    expect(onViewPublicPreview).toHaveBeenCalledWith(approved.id);
+  });
+
+  it.each([
+    ['Aguardando Triagem', 'AWAITING_TRIAGE', '2099-10-22T12:00:00.000Z'],
+    ['Reprovado', 'REJECTED', '2099-10-22T12:00:00.000Z'],
+    ['Expirado', 'EXPIRED', '2099-10-22T12:00:00.000Z'],
+    ['aprovado vencido', 'APPROVED', '2020-10-22T12:00:00.000Z'],
+  ])('does not expose a public preview for %s alerts', (_label, status, expiresAt) => {
+    render(<AlertBoard lockGranted alerts={[{ ...alert, status, expiresAt }]} {...callbacks()} onViewPublicPreview={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Ver no painel público' })).toBeNull();
+  });
+
   it('offers PNG and JPEG downloads only for an approved, non-expired alert', async () => {
     const user = userEvent.setup();
     const onExportPoster = vi.fn().mockResolvedValue(undefined);

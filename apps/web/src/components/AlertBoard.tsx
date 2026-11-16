@@ -55,6 +55,7 @@ interface AlertBoardProps {
   onTransition: (alertId: string, status: ReviewDecision, reason: string) => Promise<string>;
   onLoadAudit: (alertId: string) => Promise<AuditEvent[]>;
   onSimulateDelivery: (alertId: string) => Promise<{ eligibleCount: number; message: string }>;
+  onViewPublicPreview?: (alertId: string) => void;
   onExportPoster?: (alert: AlertView, format: AlertPosterFormat) => Promise<void>;
   onSharePoster?: (alert: AlertView) => Promise<ManualShareResult>;
   lockError?: string | null;
@@ -64,7 +65,7 @@ interface AlertBoardProps {
 
 export function AlertBoard({
   lockGranted, alerts, onClaim, onTransition, onLoadAudit, onSimulateDelivery,
-  onExportPoster, onSharePoster, lockError, canRecover = false, onRecover,
+  onViewPublicPreview, onExportPoster, onSharePoster, lockError, canRecover = false, onRecover,
 }: AlertBoardProps) {
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
@@ -263,6 +264,8 @@ export function AlertBoard({
               </div>
             </div>}
             {status === 'APPROVED' && <div className="mt-4 space-y-2">
+              {canExportPoster && onViewPublicPreview && <Button type="button" variant="outline" className="button button-outline"
+                onClick={() => onViewPublicPreview(alert.id)}><Eye size={16} aria-hidden="true" />Ver no painel público</Button>}
               {posterPreview && <Dialog open={previewAlertId === alert.id}
                 onOpenChange={(open) => setPreviewAlertId(open ? alert.id : null)}>
                 <DialogTrigger render={<Button type="button" variant="outline" className="button button-outline" />}>

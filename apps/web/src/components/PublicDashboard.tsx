@@ -1,25 +1,18 @@
 import { useMemo } from 'react';
-import { ArrowRight, CloudRain, CloudSun, TriangleAlert, WavesHorizontal, Wind } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CloudRain, CloudSun, TriangleAlert, WavesHorizontal, Wind } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card } from '@/components/ui/card.js';
 import { Skeleton } from '@/components/ui/skeleton.js';
-
-export interface PublicAlert {
-  id: string;
-  title: string;
-  summary: string;
-  status: string;
-  generatedAt: string;
-  expiresAt: string;
-  synthetic: boolean;
-}
+import { isEligiblePublicAlert, type PublicAlert } from '../lib/public-alert.js';
 
 interface PublicDashboardProps {
   alerts?: PublicAlert[];
   now?: number;
   state?: 'ready' | 'loading' | 'error';
+  focusAlertId?: string;
+  onBackToOperator?: () => void;
   onNavigate: (destination: 'citizen' | 'feedback' | 'login') => void;
 }
 
@@ -27,19 +20,113 @@ const sampleAlerts: PublicAlert[] = [{
   id: 'public-alert-synthetic-01',
   title: 'Exemplo de aviso de chuva intensa',
   summary: 'Conteúdo sintético para apresentar a composição de um comunicado público. Nenhum risco atual foi confirmado.',
+  area: 'Rio Índios — Presidente Getúlio/SC',
   status: 'APPROVED',
   generatedAt: new Date(Date.now() - 15 * 60_000).toISOString(),
   expiresAt: new Date(Date.now() + 23 * 60 * 60_000 + 45 * 60_000).toISOString(),
   synthetic: true,
+  relatedReadings: [{ metric: 'Nível do Rio Índios', value: 1.82, unit: 'm', observedAt: new Date(Date.now() - 15 * 60_000).toISOString() }],
 }];
 
 function formatTime(value: string): string {
   return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 }
 
-export function PublicDashboard({ alerts = sampleAlerts, now = Date.now(), state = 'ready', onNavigate }: PublicDashboardProps) {
-  const visibleAlerts = useMemo(() => alerts.filter((alert) => alert.synthetic && alert.status === 'APPROVED'
-    && Number.isFinite(Date.parse(alert.expiresAt)) && Date.parse(alert.expiresAt) > now), [alerts, now]);
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
+function formatMeasurement(value: number, unit: string): string {
+  return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)} ${unit}`;
+}
+
+export function PublicDashboard({
+  alerts = sampleAlerts,
+  now = Date.now(),
+  state = 'ready',
+  focusAlertId,
+  onBackToOperator,
+  onNavigate,
+}: PublicDashboardProps) {
+  const visibleAlerts = useMemo(() => alerts.filter((alert) => isEligiblePublicAlert(alert, now)), [alerts, now]);
+  const focusedAlert = focusAlertId === undefined
+    ? undefined
+    : visibleAlerts.find((alert) => alert.id === focusAlertId);
+
+  if (focusAlertId !== undefined) {
+    return <div className="screen-stack">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="eyebrow">Painel público · prévia do operador</p>
+          <p className="mb-0 text-sm text-muted-foreground">Visualização do comunicado já aprovado.</p>
+        </div>
+        {onBackToOperator && <Button type="button" variant="outline" onClick={onBackToOperator}>
+          <ArrowLeft aria-hidden="true" />Voltar à fila
+        </Button>}
+      </div>
+
+      <Alert className="notice notice-warn" role="note">
+        <TriangleAlert className="notice-icon" aria-hidden="true" />
+        <div><AlertTitle>Demonstração sintética</AlertTitle><AlertDescription>Este caso é fictício, não representa observações meteorológicas reais e não foi publicado.</AlertDescription></div>
+      </Alert>
+
+      {state === 'loading' && <div className="grid gap-3" role="status" aria-label="Carregando prévia do alerta">
+        <span className="sr-only">Carregando prévia do alerta…</span>
+        <Skeleton className="h-52 rounded-3xl" aria-hidden="true" />
+        <Skeleton className="h-28 rounded-2xl" aria-hidden="true" />
+      </div>}
+      {state === 'error' && <Alert variant="destructive" role="alert">
+        <TriangleAlert aria-hidden="true" />
+        <AlertDescription>Não foi possível carregar a prévia sintética deste alerta.</AlertDescription>
+      </Alert>}
+      {state === 'ready' && !focusedAlert && <Card className="empty-state p-6" role="status">
+        <h1 id="focused-alert-title" className="text-xl">Prévia indisponível</h1>
+        <p className="mb-0">Este aviso não está aprovado ou válido para exibição. Volte à fila para selecionar outro alerta.</p>
+      </Card>}
+      {state === 'ready' && focusedAlert && <article className="overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-lg shadow-blue-950/5">
+        <header className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 px-5 py-7 text-white sm:px-8 sm:py-9">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <Badge className="border border-white/30 bg-white/15 text-white">Aviso aprovado</Badge>
+            <Badge className="border border-white/30 bg-white/15 text-white">Sintético</Badge>
+          </div>
+          <h1 id="focused-alert-title" className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{focusedAlert.title}</h1>
+          <p className="mb-0 max-w-3xl text-base leading-relaxed text-white/95 sm:text-lg">{focusedAlert.summary}</p>
+        </header>
+
+        <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1.3fr)_minmax(240px,.7fr)]">
+          <section className="grid content-start gap-4" aria-label="Detalhes do aviso">
+            <div className="flex items-start gap-3 rounded-2xl bg-blue-50 p-4">
+              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm"><WavesHorizontal aria-hidden="true" /></span>
+              <div><p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Área</p><p className="mb-0 text-base font-bold text-slate-900">{focusedAlert.area}</p></div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Geração</p>
+                <time className="text-sm font-semibold text-slate-800" dateTime={focusedAlert.generatedAt}>Gerado em {formatDateTime(focusedAlert.generatedAt)}</time>
+              </div>
+              <div className="rounded-2xl border border-slate-200 p-4">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Validade</p>
+                <time className="text-sm font-semibold text-slate-800" dateTime={focusedAlert.expiresAt}>Expira em {formatDateTime(focusedAlert.expiresAt)}</time>
+              </div>
+            </div>
+          </section>
+
+          <Card className="rounded-2xl border-slate-200 p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <div><h2 className="mb-1 text-base">Leituras relacionadas</h2><p className="mb-0 text-xs text-muted-foreground">Valores sintéticos usados nesta demonstração.</p></div>
+              <WavesHorizontal className="text-blue-700" aria-hidden="true" />
+            </div>
+            {focusedAlert.relatedReadings.length === 0 ? <p className="empty-state mb-0">Nenhuma leitura sintética associada.</p> : <ul className="grid gap-3 p-0">
+              {focusedAlert.relatedReadings.map((reading, index) => <li className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3" key={`${reading.metric}-${reading.observedAt}-${index}`}>
+                <div><p className="mb-1 text-sm font-semibold text-slate-800">{reading.metric}</p><time className="text-xs text-muted-foreground" dateTime={reading.observedAt}>Leitura sintética · {formatTime(reading.observedAt)}</time></div>
+                <strong className="shrink-0 text-xl font-extrabold text-blue-900">{formatMeasurement(reading.value, reading.unit)}</strong>
+              </li>)}
+            </ul>}
+          </Card>
+        </div>
+      </article>}
+    </div>;
+  }
 
   return <div className="screen-stack">
     <section className="hero-panel" aria-labelledby="public-dashboard-title">

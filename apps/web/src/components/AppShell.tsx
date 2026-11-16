@@ -36,8 +36,8 @@ export function AppShell({ area, navigation, activeItem, onNavigate, onLogout, c
     <header className="app-header">
       <div className="header-inner">
         <a href="#" className="brand-block" onClick={(event) => { event.preventDefault(); onNavigate(area === 'operator' ? 'overview' : 'public'); }}>
-          <span className="brand-mark" aria-hidden="true">AS</span>
-          <span><span className="brand-name">AlertaSC</span><span className="brand-caption">Presidente Getúlio · SC</span></span>
+          <span className="brand-mark" aria-hidden="true">CA</span>
+          <span><span className="brand-name">Clima em Alerta</span><span className="brand-caption">Presidente Getúlio · SC</span></span>
         </a>
         {renderNavigation('Navegação principal')}
         <div className="header-account">
@@ -51,6 +51,6 @@ export function AppShell({ area, navigation, activeItem, onNavigate, onLogout, c
     </header>
     <main className="page" id="main-content" tabIndex={-1}>{children}</main>
     {renderNavigation('Navegação móvel')}
-    <footer className="page-footer">AlertaSC · ambiente de demonstração · dados fictícios · sem observação oficial</footer>
+    <footer className="page-footer">Clima em Alerta · ambiente de demonstração · dados fictícios · sem observação oficial</footer>
   </div>;
 }

@@ -7,6 +7,7 @@ describe('LoginForm', () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<LoginForm onSubmit={onSubmit} />);
 
+    expect(screen.getByRole('heading', { name: 'Entrar no Clima em Alerta' })).toBeDefined();
     fireEvent.change(screen.getByLabelText('CPF'), { target: { value: '000.000.000-00' } });
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'synthetic-only-password' } });
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));

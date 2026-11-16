@@ -11,12 +11,14 @@ const navigation: ShellNavigationItem[] = [
 ];
 
 describe('AppShell', () => {
-  it('keeps the AlertaSC brand and provides the same profile navigation in header and mobile bar', () => {
+  it('keeps the Clima em Alerta brand and provides the same profile navigation in header and mobile bar', () => {
     render(<AppShell area="public" navigation={navigation} activeItem="public" onNavigate={vi.fn()}>
       <h1>Painel público</h1>
     </AppShell>);
 
-    expect(screen.getByRole('link', { name: /AlertaSC/ })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Clima em Alerta/ })).toBeDefined();
+    expect(screen.getByText('CA')).toBeDefined();
+    expect(screen.queryByText('AlertaSC')).toBeNull();
     expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeDefined();
     expect(screen.getByRole('navigation', { name: 'Navegação móvel' })).toBeDefined();
     expect(screen.getAllByRole('button', { name: /Cadastro/ })).toHaveLength(2);
