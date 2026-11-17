@@ -100,18 +100,6 @@ export async function createFirstSyntheticAdministrator(database: DataSource): P
 }
 
 export async function ensureSyntheticReviewAlert(database: DataSource): Promise<boolean> {
-  const legacyFixtures = await database.query(
-    `SELECT a.id, a.generated_at
-       FROM alerts a
-      WHERE a.synthetic = true AND a.source_label LIKE 'Fixture local%'
-        AND NOT EXISTS (SELECT 1 FROM alert_observations ao WHERE ao.alert_id = a.id)`,
-  );
-  for (const alert of legacyFixtures) {
-    await database.transaction(async (manager) => {
-      await recordSyntheticAlertEvidence(manager, alert.id, new Date(alert.generated_at));
-    });
-  }
-
   const existing = await database.query(
     `SELECT id, generated_at FROM alerts
       WHERE synthetic = true AND source_label LIKE 'Fixture local%'
@@ -120,8 +108,19 @@ export async function ensureSyntheticReviewAlert(database: DataSource): Promise<
   );
   if (existing.length) {
     await database.transaction(async (manager) => {
+      // Claiming takes the same alert row lock before creating a claim.
+      const eligible = await manager.query(
+        `SELECT a.id FROM alerts a
+          WHERE a.id = $1 AND a.status = 'AWAITING_TRIAGE' AND a.expires_at > now()
+            AND NOT EXISTS (SELECT 1 FROM alert_claims c WHERE c.alert_id = a.id AND c.released_at IS NULL)
+          FOR UPDATE`,
+        [existing[0].id],
+      );
+      if (!eligible.length) return;
       await manager.query(
-        'UPDATE alerts SET title = $2, summary = $3, area_label = $4 WHERE id = $1',
+        `UPDATE alerts SET title = $2, summary = $3, area_label = $4
+          WHERE id = $1 AND status = 'AWAITING_TRIAGE'
+            AND NOT EXISTS (SELECT 1 FROM alert_claims c WHERE c.alert_id = alerts.id AND c.released_at IS NULL)`,
         [existing[0].id, RIO_INDIOS_DEMO.title, RIO_INDIOS_DEMO.summary, RIO_INDIOS_DEMO.area],
       );
       const observations = await manager.query(

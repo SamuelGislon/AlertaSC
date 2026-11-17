@@ -42,6 +42,7 @@ export function App() {
   const [adminSection, setAdminSection] = useState<'operators' | 'citizens'>('operators');
   const [alerts, setAlerts] = useState<AlertView[]>([]);
   const [publicPreviewAlert, setPublicPreviewAlert] = useState<PublicAlert | null>(null);
+  const [previewNow, setPreviewNow] = useState(() => Date.now());
   const [lockGranted, setLockGranted] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
@@ -135,6 +136,19 @@ export function App() {
     };
   }, [operator, page, lockAttempt]);
 
+  useEffect(() => {
+    if (page !== 'public-preview' || !publicPreviewAlert) return;
+    const expires = Date.parse(publicPreviewAlert.expiresAt);
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      const now = Date.now();
+      setPreviewNow(now);
+      if (expires > now) timer = setTimeout(schedule, Math.min(expires - now, 2_147_483_647));
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, [page, publicPreviewAlert]);
+
   if (!operator) {
     const citizenPage = page === 'citizen';
     const feedbackPage = page === 'feedback';
@@ -171,7 +185,7 @@ export function App() {
     : page === 'public-preview' ? <PublicDashboard
       alerts={publicPreviewAlert ? [publicPreviewAlert] : []}
       focusAlertId={publicPreviewAlert?.id ?? ''}
-      now={Date.now()}
+      now={previewNow}
       onNavigate={navigate}
       onBackToOperator={() => { setPublicPreviewAlert(null); setPage('alerts'); }} />
       : page === 'overview' ? <OperatorOverview onNavigate={navigate} />

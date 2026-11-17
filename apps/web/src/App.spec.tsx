@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App.js';
@@ -54,6 +54,28 @@ describe('AlertaSC application navigation', () => {
     expect(await screen.findByRole('heading', { name: 'Fila de alertas' })).toBeDefined();
     await waitFor(() => expect(apiMocks.acquireAlertTab).toHaveBeenCalledOnce());
     expect(apiMocks.alerts).toHaveBeenCalledOnce();
+  });
+
+  it('removes an open preview exactly when the alert expires', async () => {
+    const user = userEvent.setup();
+    const expiresAt = new Date(Date.now() + 60_000).toISOString();
+    apiMocks.alerts.mockResolvedValue([{ id: 'expiring', title: 'Aviso prestes a expirar',
+      summary: 'Demonstração sintética', source: 'fixture', area: 'Rio Índios', status: 'APPROVED',
+      generatedAt: new Date().toISOString(), expiresAt, synthetic: true, relatedReadings: [] }]);
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Acesso do operador' }));
+    await user.type(screen.getByLabelText('CPF'), '00000000000');
+    await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+    const preview = await screen.findByRole('button', { name: 'Ver no painel público' });
+    vi.useFakeTimers();
+    fireEvent.click(preview);
+    expect(screen.getByRole('heading', { name: 'Aviso prestes a expirar' })).toBeDefined();
+    try {
+      act(() => { vi.advanceTimersByTime(Date.parse(expiresAt) - Date.now()); });
+      expect(screen.queryByRole('heading', { name: 'Aviso prestes a expirar' })).toBeNull();
+      expect(screen.getByText(/indisponível/i)).toBeDefined();
+    } finally { vi.useRealTimers(); }
   });
 
   it('previews the same approved alert only in the operator session and clears it on logout', async () => {

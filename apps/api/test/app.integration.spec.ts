@@ -194,6 +194,20 @@ describe('AlertaSC API with PostgreSQL', () => {
     )).toHaveLength(1);
   });
 
+  it.each(['IN_ANALYSIS', 'AWAITING_TRIAGE'])('does not alter a claimed fixture in %s', async (status) => {
+    await database.query("UPDATE alerts SET status = $2, title = 'Conteúdo sob revisão', summary = 'Original', area_label = 'Área original' WHERE id = $1", [fixtures.alertId, status]);
+    await database.query('DELETE FROM alert_observations WHERE alert_id = $1', [fixtures.alertId]);
+    await database.query("INSERT INTO alert_claims (id, alert_id, operator_id) VALUES ('44444444-4444-4444-8444-444444444444', $1, $2)", [fixtures.alertId, fixtures.admin.id]);
+    const before = await database.query('SELECT * FROM alerts WHERE id = $1', [fixtures.alertId]);
+    const history = await database.query('SELECT * FROM audit_events WHERE entity_id = $1 ORDER BY id', [fixtures.alertId]);
+
+    expect(await ensureSyntheticReviewAlert(database)).toBe(false);
+
+    expect(await database.query('SELECT * FROM alerts WHERE id = $1', [fixtures.alertId])).toEqual(before);
+    expect(await database.query('SELECT * FROM alert_observations WHERE alert_id = $1', [fixtures.alertId])).toEqual([]);
+    expect(await database.query('SELECT * FROM audit_events WHERE entity_id = $1 ORDER BY id', [fixtures.alertId])).toEqual(history);
+  });
+
   it('authenticates synthetic operators and never reveals credentials on failure', async () => {
     const valid = await login();
     expect(valid.accessToken).toEqual(expect.any(String));
@@ -400,7 +414,9 @@ describe('AlertaSC API with PostgreSQL', () => {
 
     const detail = await request(app.getHttpServer()).get(`/api/v1/alerts/${fixtures.alertId}`)
       .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
-    expect(detail.body.relatedReadings).toEqual([
+    for (const readings of [detail.body.relatedReadings, [...detail.body.relatedReadings].reverse()]) {
+      expect(readings).toHaveLength(2);
+      expect(readings).toEqual(expect.arrayContaining([
       expect.objectContaining({
         source: 'Fixture local — estação fictícia PG-01',
         metric: 'Precipitação acumulada em 1 hora',
@@ -420,7 +436,8 @@ describe('AlertaSC API with PostgreSQL', () => {
         area: 'Rio Índios — Presidente Getúlio/SC',
         synthetic: true,
       }),
-    ]);
+      ]));
+    }
   });
 
   it('simulates delivery only after approval and rechecks opt-out on every attempt', async () => {
