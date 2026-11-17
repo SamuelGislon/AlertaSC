@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App.js';
@@ -54,5 +54,95 @@ describe('AlertaSC application navigation', () => {
     expect(await screen.findByRole('heading', { name: 'Fila de alertas' })).toBeDefined();
     await waitFor(() => expect(apiMocks.acquireAlertTab).toHaveBeenCalledOnce());
     expect(apiMocks.alerts).toHaveBeenCalledOnce();
+  });
+
+  it('removes an open preview exactly when the alert expires', async () => {
+    const user = userEvent.setup();
+    const expiresAt = new Date(Date.now() + 60_000).toISOString();
+    apiMocks.alerts.mockResolvedValue([{ id: 'expiring', title: 'Aviso prestes a expirar',
+      summary: 'Demonstração sintética', source: 'fixture', area: 'Rio Índios', status: 'APPROVED',
+      generatedAt: new Date().toISOString(), expiresAt, synthetic: true, relatedReadings: [] }]);
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Acesso do operador' }));
+    await user.type(screen.getByLabelText('CPF'), '00000000000');
+    await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+    const preview = await screen.findByRole('button', { name: 'Ver no painel público' });
+    vi.useFakeTimers();
+    fireEvent.click(preview);
+    expect(screen.getByRole('heading', { name: 'Aviso prestes a expirar' })).toBeDefined();
+    try {
+      act(() => { vi.advanceTimersByTime(Date.parse(expiresAt) - Date.now()); });
+      expect(screen.queryByRole('heading', { name: 'Aviso prestes a expirar' })).toBeNull();
+      expect(screen.getByText(/indisponível/i)).toBeDefined();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('previews the same approved alert only in the operator session and clears it on logout', async () => {
+    const user = userEvent.setup();
+    const candidate = {
+      id: 'rio-indios-demo',
+      title: 'Atenção para cheias — Rio Índios',
+      summary: 'Demonstração sintética; valores fictícios sem observação real.',
+      source: 'Fonte interna: fixture RI-01',
+      area: 'Rio Índios — Presidente Getúlio/SC',
+      status: 'AWAITING_TRIAGE',
+      generatedAt: '2026-11-16T12:00:00.000Z',
+      expiresAt: '2099-11-17T12:00:00.000Z',
+      synthetic: true as const,
+      relatedReadings: [{
+        source: 'Fonte interna: régua fictícia RI-01',
+        metric: 'Nível do Rio Índios',
+        rawValue: 450,
+        rawUnit: 'cm',
+        normalizedValue: 4.5,
+        normalizedUnit: 'm',
+        observedAt: '2026-11-16T11:55:00.000Z',
+        area: 'Rio Índios — Presidente Getúlio/SC',
+        synthetic: true as const,
+      }],
+    };
+    const approved = { ...candidate, status: 'APPROVED' };
+    apiMocks.logout.mockResolvedValue(undefined);
+    apiMocks.alerts.mockReset()
+      .mockResolvedValueOnce([candidate])
+      .mockResolvedValueOnce([{ ...candidate, status: 'IN_ANALYSIS' }])
+      .mockResolvedValue([approved]);
+    apiMocks.claimAlert.mockResolvedValue(undefined);
+    apiMocks.transitionAlert.mockResolvedValue({ status: 'APPROVED' });
+
+    render(<App />);
+    expect(screen.queryByRole('button', { name: 'Ver no painel público' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Acesso do operador' }));
+    await user.type(screen.getByLabelText('CPF'), '00000000000');
+    await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+    expect(await screen.findByRole('heading', { name: 'Fila de alertas' })).toBeDefined();
+    await waitFor(() => expect(apiMocks.alerts).toHaveBeenCalledTimes(1));
+
+    await user.click(await screen.findByRole('button', { name: 'Assumir alerta' }));
+    await waitFor(() => expect(apiMocks.claimAlert).toHaveBeenCalledWith(candidate.id));
+    await user.type(screen.getByLabelText('Motivo da decisão'), 'Revisão sintética aprovada.');
+    await user.click(screen.getByRole('button', { name: 'Aprovar' }));
+    await waitFor(() => expect(apiMocks.transitionAlert).toHaveBeenCalledWith(candidate.id, 'APPROVED', 'Revisão sintética aprovada.'));
+
+    await user.click(await screen.findByRole('button', { name: 'Ver no painel público' }));
+    expect(await screen.findByRole('heading', { name: candidate.title })).toBeDefined();
+    expect(screen.getByText(candidate.area)).toBeDefined();
+    expect(screen.getByText('4,5 m')).toBeDefined();
+    expect(screen.queryByText('Fonte interna: fixture RI-01')).toBeNull();
+    expect(screen.queryByText('Fonte interna: régua fictícia RI-01')).toBeNull();
+    expect(screen.queryByText('450 cm')).toBeNull();
+    expect(screen.queryByText('SYNTHETIC_ALERT_GENERATED')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Voltar à fila' }));
+    expect(await screen.findByRole('heading', { name: 'Fila de alertas' })).toBeDefined();
+    await user.click(await screen.findByRole('button', { name: 'Ver no painel público' }));
+    expect(await screen.findByRole('heading', { name: candidate.title })).toBeDefined();
+    await user.click(screen.getByRole('button', { name: 'Sair' }));
+
+    expect(await screen.findByRole('heading', { name: /Acompanhe as condições em Presidente Getúlio/ })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Ver no painel público' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: candidate.title })).toBeNull();
   });
 });

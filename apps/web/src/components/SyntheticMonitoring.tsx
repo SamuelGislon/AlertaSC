@@ -1,3 +1,8 @@
+import { Activity } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Badge } from '@/components/ui/badge.js';
+import { Card } from '@/components/ui/card.js';
+
 const readings = [
   { place: 'Rio Índios · centro', metric: 'Nível', value: '1,82 m', observed: '15h20', freshness: 'Atualizada há 4 minutos', status: 'Atual', tone: 'good' },
   { place: 'Chuva · estação demo', metric: 'Precipitação', value: '46 mm', observed: '15h06', freshness: 'Último exemplo há 14 minutos', status: 'Desatualizada', tone: 'warn' },
@@ -6,18 +11,18 @@ const readings = [
 
 export function SyntheticMonitoring() {
   return <div className="screen-stack">
-    <div className="page-heading"><div><p className="eyebrow">Observações sintéticas</p><h1>Monitoramento por região</h1><p className="lead">Leituras acima de 10 minutos são sinalizadas. Falhas de fonte não criam valores substitutos.</p></div><span className="status-chip status-warn">Simulador local</span></div>
-    <div className="notice notice-info"><span className="notice-icon" aria-hidden="true">i</span><div><strong>Somente dados fictícios</strong><p>Leituras, horários e regiões são exemplos. Nenhuma fonte oficial está conectada.</p></div></div>
+    <div className="page-heading"><div><p className="eyebrow">Observações sintéticas</p><h1>Monitoramento por região</h1><p className="lead">Leituras acima de 10 minutos são sinalizadas. Falhas de fonte não criam valores substitutos.</p></div><Badge variant="secondary" className="status-chip status-warn">Simulador local</Badge></div>
+    <Alert className="notice notice-info" role="note"><Activity className="notice-icon" aria-hidden="true" /><div><AlertTitle>Somente dados fictícios</AlertTitle><AlertDescription>Leituras, horários e regiões são exemplos. Nenhuma fonte oficial está conectada.</AlertDescription></div></Alert>
     <section className="source-grid" aria-label="Estado das fontes sintéticas">
-      {readings.map((reading) => <article key={reading.place} className="surface-card source-card">
+      {readings.map((reading) => <Card key={reading.place} className="surface-card source-card">
         <span className={`source-indicator source-${reading.tone}`} aria-hidden="true" />
         <div className="row-copy"><strong>{reading.place}</strong><p>{reading.metric}{reading.value ? ` · ${reading.value}` : ''}{reading.observed ? ` · às ${reading.observed}` : ''}</p></div>
-        <span className={`status-chip status-${reading.tone}`}>{reading.status}</span>
+        <Badge variant="secondary" className={`status-chip status-${reading.tone}`}>{reading.status}</Badge>
         <p className="source-freshness">{reading.freshness}</p>
-      </article>)}
+      </Card>)}
     </section>
-    <section className="surface-card card-padding">
-      <div className="section-heading"><div><h2>Precipitação sintética</h2><p>Últimas 6 horas · milímetros · série de demonstração</p></div><span className="tag">Presidente Getúlio/SC</span></div>
+    <Card className="surface-card card-padding">
+      <div className="section-heading"><div><h2>Precipitação sintética</h2><p>Últimas 6 horas · milímetros · série de demonstração</p></div><Badge variant="secondary" className="tag">Presidente Getúlio/SC</Badge></div>
       <figure className="chart" role="img" aria-label="Série sintética de precipitação por hora">
         <svg viewBox="0 0 720 220" aria-hidden="true" preserveAspectRatio="none">
           <g fill="none" stroke="var(--line)" strokeWidth="1"><path d="M50 25H700M50 70H700M50 115H700M50 160H700" /></g>
@@ -27,14 +32,14 @@ export function SyntheticMonitoring() {
         </svg>
       </figure>
       <p className="caption">Série demonstrativa. Não representa precipitação observada.</p>
-    </section>
-    <section className="surface-card card-padding">
+    </Card>
+    <Card className="surface-card card-padding">
       <div className="section-heading"><div><h2>Leituras recentes</h2><p>Valor e hora de observação</p></div></div>
       <div className="table-wrap"><table className="data-table"><thead><tr><th>Variável</th><th>Região</th><th>Valor</th><th>Observado</th><th>Estado</th></tr></thead><tbody>
-        <tr><td data-label="Variável">Nível do rio</td><td data-label="Região">Rio Índios · centro</td><td data-label="Valor">1,82 m</td><td data-label="Observado">15h20</td><td data-label="Estado"><span className="status-chip status-good">Atual</span></td></tr>
-        <tr><td data-label="Variável">Precipitação acumulada</td><td data-label="Região">Estação demonstrativa</td><td data-label="Valor">46 mm</td><td data-label="Observado">15h06</td><td data-label="Estado"><span className="status-chip status-warn">Desatualizada</span></td></tr>
-        <tr><td data-label="Variável">Vento</td><td data-label="Região">Estação demonstrativa</td><td data-label="Valor">—</td><td data-label="Observado">—</td><td data-label="Estado"><span className="status-chip status-error">Falha simulada</span></td></tr>
+        <tr><td data-label="Variável">Nível do rio</td><td data-label="Região">Rio Índios · centro</td><td data-label="Valor">1,82 m</td><td data-label="Observado">15h20</td><td data-label="Estado"><Badge variant="secondary" className="status-chip status-good">Atual</Badge></td></tr>
+        <tr><td data-label="Variável">Precipitação acumulada</td><td data-label="Região">Estação demonstrativa</td><td data-label="Valor">46 mm</td><td data-label="Observado">15h06</td><td data-label="Estado"><Badge variant="secondary" className="status-chip status-warn">Desatualizada</Badge></td></tr>
+        <tr><td data-label="Variável">Vento</td><td data-label="Região">Estação demonstrativa</td><td data-label="Valor">—</td><td data-label="Observado">—</td><td data-label="Estado"><Badge variant="secondary" className="status-chip status-error">Falha simulada</Badge></td></tr>
       </tbody></table></div>
-    </section>
+    </Card>
   </div>;
 }

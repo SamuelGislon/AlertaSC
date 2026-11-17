@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  BellRing, ChartNoAxesCombined, ClipboardList, House, LayoutDashboard,
+  LogIn, MessageCircle, TriangleAlert, UserRound, UsersRound,
+} from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { api, currentAccessToken, type AlertView, type OperatorSession, setAccessToken } from './api.js';
 import { AlertBoard } from './components/AlertBoard.js';
 import { AppShell, type ShellNavigationItem } from './components/AppShell.js';
@@ -12,21 +18,22 @@ import { OperatorOverview } from './components/OperatorOverview.js';
 import { PublicDashboard } from './components/PublicDashboard.js';
 import { SyntheticCitizens } from './components/SyntheticCitizens.js';
 import { SyntheticMonitoring } from './components/SyntheticMonitoring.js';
+import { isEligiblePublicAlert, toPublicAlert, type PublicAlert } from './lib/public-alert.js';
 
-type Page = 'public' | 'citizen' | 'feedback' | 'login' | 'overview' | 'monitoring' | 'alerts' | 'audit' | 'admin';
+type Page = 'public' | 'citizen' | 'feedback' | 'login' | 'overview' | 'monitoring' | 'alerts' | 'audit' | 'admin' | 'public-preview';
 
 const publicNavigation: ShellNavigationItem[] = [
-  { id: 'public', label: 'Início', icon: '⌂' },
-  { id: 'citizen', label: 'Cadastro', icon: '○' },
-  { id: 'feedback', label: 'Retorno', icon: '♡' },
-  { id: 'login', label: 'Operador', icon: '◆' },
+  { id: 'public', label: 'Início', icon: House },
+  { id: 'citizen', label: 'Cadastro', icon: UserRound },
+  { id: 'feedback', label: 'Retorno', icon: MessageCircle },
+  { id: 'login', label: 'Operador', icon: LogIn },
 ];
 
 const operatorNavigation: ShellNavigationItem[] = [
-  { id: 'overview', label: 'Resumo', icon: '⌂' },
-  { id: 'monitoring', label: 'Monitoramento', icon: '▥' },
-  { id: 'alerts', label: 'Alertas', icon: '!' },
-  { id: 'audit', label: 'Auditoria', icon: '◷' },
+  { id: 'overview', label: 'Resumo', icon: LayoutDashboard },
+  { id: 'monitoring', label: 'Monitoramento', icon: ChartNoAxesCombined },
+  { id: 'alerts', label: 'Alertas', icon: BellRing },
+  { id: 'audit', label: 'Auditoria', icon: ClipboardList },
 ];
 
 export function App() {
@@ -34,6 +41,8 @@ export function App() {
   const [page, setPage] = useState<Page>('public');
   const [adminSection, setAdminSection] = useState<'operators' | 'citizens'>('operators');
   const [alerts, setAlerts] = useState<AlertView[]>([]);
+  const [publicPreviewAlert, setPublicPreviewAlert] = useState<PublicAlert | null>(null);
+  const [previewNow, setPreviewNow] = useState(() => Date.now());
   const [lockGranted, setLockGranted] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [lockError, setLockError] = useState<string | null>(null);
@@ -50,6 +59,7 @@ export function App() {
       setOperator(null);
       setLockGranted(false);
       setAlerts([]);
+      setPublicPreviewAlert(null);
       setPage('public');
     }
   }, []);
@@ -58,6 +68,16 @@ export function App() {
     await api.recoverAlertTab(reason);
     setLockAttempt((attempt) => attempt + 1);
   }, []);
+
+  const viewPublicPreview = useCallback((alertId: string) => {
+    if (!operator || !lockGranted) return;
+    const selectedAlert = alerts.find((alert) => alert.id === alertId);
+    if (!selectedAlert) return;
+    const projection = toPublicAlert(selectedAlert);
+    if (!isEligiblePublicAlert(projection, Date.now())) return;
+    setPublicPreviewAlert(projection);
+    setPage('public-preview');
+  }, [alerts, lockGranted, operator]);
 
   const signIn = useCallback(async ({ cpf, password }: { cpf: string; password: string }) => {
     try {
@@ -116,6 +136,19 @@ export function App() {
     };
   }, [operator, page, lockAttempt]);
 
+  useEffect(() => {
+    if (page !== 'public-preview' || !publicPreviewAlert) return;
+    const expires = Date.parse(publicPreviewAlert.expiresAt);
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      const now = Date.now();
+      setPreviewNow(now);
+      if (expires > now) timer = setTimeout(schedule, Math.min(expires - now, 2_147_483_647));
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, [page, publicPreviewAlert]);
+
   if (!operator) {
     const citizenPage = page === 'citizen';
     const feedbackPage = page === 'feedback';
@@ -126,7 +159,7 @@ export function App() {
       {citizenPage ? <CitizenPortal onBackToLogin={() => setPage('public')} />
         : feedbackPage ? <CitizenFeedback onNavigate={navigate} />
           : loginPage ? <div className="login-layout">
-            <div className="notice notice-info"><span className="notice-icon" aria-hidden="true">i</span><div><strong>Conta autorizada</strong><p>Não há cadastro público de operadores. Entre somente com credenciais provisionadas para a equipe municipal.</p></div></div>
+            <Alert role="note" className="notice notice-info"><LogIn className="notice-icon" aria-hidden="true" /><div><AlertTitle>Conta autorizada</AlertTitle><AlertDescription>Não há cadastro público de operadores. Entre somente com credenciais provisionadas para a equipe municipal.</AlertDescription></div></Alert>
             <LoginForm onSubmit={signIn} error={authError} />
           </div>
             : <PublicDashboard onNavigate={navigate} />}
@@ -135,18 +168,27 @@ export function App() {
 
   const isAdmin = operator.roles.includes('ADMIN');
   const navigation = isAdmin
-    ? [...operatorNavigation, { id: 'admin', label: 'Administração', icon: '○' }]
+    ? [...operatorNavigation, { id: 'admin', label: 'Administração', icon: UsersRound }]
     : operatorNavigation;
 
   const operatorPage = page === 'admin'
     ? isAdmin ? <section className="screen-stack" aria-label="Administração sintética">
-      <div role="tablist" aria-label="Cadastros sintéticos" className="admin-tabs">
-        <button type="button" role="tab" aria-selected={adminSection === 'operators'} onClick={() => setAdminSection('operators')}>Operadores sintéticos</button>
-        <button type="button" role="tab" aria-selected={adminSection === 'citizens'} onClick={() => setAdminSection('citizens')}>Cadastros sintéticos</button>
-      </div>
-      {adminSection === 'operators' ? <OperatorManagement /> : <SyntheticCitizens />}
-    </section> : <section className="notice notice-error" role="alert"><strong>Acesso negado.</strong> Esta área exige a permissão administrativa validada pela API.</section>
-    : page === 'overview' ? <OperatorOverview onNavigate={navigate} />
+      <Tabs value={adminSection} onValueChange={(value) => setAdminSection(value as 'operators' | 'citizens')}>
+        <TabsList aria-label="Cadastros sintéticos" className="admin-tabs">
+          <TabsTrigger value="operators">Operadores sintéticos</TabsTrigger>
+          <TabsTrigger value="citizens">Cadastros sintéticos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="operators"><OperatorManagement /></TabsContent>
+        <TabsContent value="citizens"><SyntheticCitizens /></TabsContent>
+      </Tabs>
+    </section> : <Alert variant="destructive" className="notice notice-error"><TriangleAlert className="notice-icon" aria-hidden="true" /><div><AlertTitle>Acesso negado.</AlertTitle><AlertDescription>Esta área exige a permissão administrativa validada pela API.</AlertDescription></div></Alert>
+    : page === 'public-preview' ? <PublicDashboard
+      alerts={publicPreviewAlert ? [publicPreviewAlert] : []}
+      focusAlertId={publicPreviewAlert?.id ?? ''}
+      now={previewNow}
+      onNavigate={navigate}
+      onBackToOperator={() => { setPublicPreviewAlert(null); setPage('alerts'); }} />
+      : page === 'overview' ? <OperatorOverview onNavigate={navigate} />
       : page === 'monitoring' ? <SyntheticMonitoring />
         : page === 'audit' ? <AuditOverview onNavigate={navigate} />
           : <AlertBoard lockGranted={lockGranted} alerts={alerts} lockError={lockError}
@@ -158,9 +200,10 @@ export function App() {
               return result.status;
             }}
             onLoadAudit={api.alertAudit}
-            onSimulateDelivery={async (alertId) => api.simulateDelivery(alertId)} />;
+            onSimulateDelivery={async (alertId) => api.simulateDelivery(alertId)}
+            onViewPublicPreview={viewPublicPreview} />;
 
-  return <AppShell area="operator" navigation={navigation} activeItem={page === 'admin' ? 'admin' : page}
+  return <AppShell area="operator" navigation={navigation} activeItem={page === 'admin' ? 'admin' : page === 'public-preview' ? 'alerts' : page}
     onNavigate={navigate} onLogout={() => void logout()}>
     {operatorPage}
   </AppShell>;

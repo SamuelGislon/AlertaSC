@@ -128,7 +128,7 @@ export function buildAlertPosterSvg(alert: AlertView): string {
   <rect y="${footerTop}" width="${width}" height="${height - footerTop}" fill="#14284e"/>
   <text class="footer" x="${padding}" y="${footerTop + 52}">Defesa Civil: 199</text>
   <text class="footer" x="${padding + 500}" y="${footerTop + 52}">Bombeiros: 193</text>
-  <text class="footer-small" x="${padding}" y="${footerTop + 99}">Pres. Getúlio - SC · ${escapeXml(formatDate(alert.generatedAt))} · AlertaSC</text>
+  <text class="footer-small" x="${padding}" y="${footerTop + 99}">Pres. Getúlio - SC · ${escapeXml(formatDate(alert.generatedAt))} · Clima em Alerta</text>
   <text class="footer-small" x="${padding}" y="${footerTop + 145}">Gerado para demonstração · expira ${escapeXml(formatDate(alert.expiresAt))}</text>
 </svg>`;
 }
@@ -193,7 +193,7 @@ export async function shareAlertPoster(alert: AlertView): Promise<ManualShareRes
   const blob = await createAlertPosterBlob(alert, 'png');
   const filename = posterFilename(alert, 'png');
   const file = new File([blob], filename, { type: 'image/png' });
-  const shareData: ShareData = { files: [file], title: 'Comunicado AlertaSC' };
+  const shareData: ShareData = { files: [file], title: 'Comunicado Clima em Alerta' };
   const shareAvailable = typeof navigator.share === 'function'
     && typeof navigator.canShare === 'function'
     && navigator.canShare({ files: [file] });

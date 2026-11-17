@@ -1,4 +1,15 @@
 import { useState, type FormEvent } from 'react';
+import { Activity, BellRing, CircleCheck, CircleX, ClipboardList, Clock, Download, EllipsisVertical, Eye, Share2, TriangleAlert } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert.js';
+import { Badge } from '@/components/ui/badge.js';
+import { Button } from '@/components/ui/button.js';
+import { Card } from '@/components/ui/card.js';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.js';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.js';
+import { Field, FieldLabel } from '@/components/ui/field.js';
+import { Textarea } from '@/components/ui/textarea.js';
+import { notifySuccess } from '@/components/ui/toast.js';
 import type { AlertView, AuditEvent, ReviewDecision } from '../api.js';
 import { buildAlertPosterSvg, canExportAlertPoster, downloadAlertPoster, shareAlertPoster, type AlertPosterFormat, type ManualShareResult } from '../lib/alert-poster.js';
 
@@ -8,6 +19,22 @@ const statusLabels: Record<string, string> = {
   APPROVED: 'Aprovado',
   REJECTED: 'Reprovado',
   EXPIRED: 'Expirado',
+};
+
+const statusIcons: Record<string, LucideIcon> = {
+  AWAITING_TRIAGE: Clock,
+  IN_ANALYSIS: Activity,
+  APPROVED: CircleCheck,
+  REJECTED: CircleX,
+  EXPIRED: TriangleAlert,
+};
+
+const statusTones: Record<string, string> = {
+  AWAITING_TRIAGE: 'status-warn',
+  IN_ANALYSIS: 'status-info',
+  APPROVED: 'status-good',
+  REJECTED: 'status-error',
+  EXPIRED: 'status-error',
 };
 
 const auditLabels: Record<string, string> = {
@@ -28,6 +55,7 @@ interface AlertBoardProps {
   onTransition: (alertId: string, status: ReviewDecision, reason: string) => Promise<string>;
   onLoadAudit: (alertId: string) => Promise<AuditEvent[]>;
   onSimulateDelivery: (alertId: string) => Promise<{ eligibleCount: number; message: string }>;
+  onViewPublicPreview?: (alertId: string) => void;
   onExportPoster?: (alert: AlertView, format: AlertPosterFormat) => Promise<void>;
   onSharePoster?: (alert: AlertView) => Promise<ManualShareResult>;
   lockError?: string | null;
@@ -37,7 +65,7 @@ interface AlertBoardProps {
 
 export function AlertBoard({
   lockGranted, alerts, onClaim, onTransition, onLoadAudit, onSimulateDelivery,
-  onExportPoster, onSharePoster, lockError, canRecover = false, onRecover,
+  onViewPublicPreview, onExportPoster, onSharePoster, lockError, canRecover = false, onRecover,
 }: AlertBoardProps) {
   const [statuses, setStatuses] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
@@ -48,6 +76,7 @@ export function AlertBoard({
   const [deliveryMessages, setDeliveryMessages] = useState<Record<string, string>>({});
   const [exportMessages, setExportMessages] = useState<Record<string, string>>({});
   const [recoveryReason, setRecoveryReason] = useState('');
+  const [previewAlertId, setPreviewAlertId] = useState<string | null>(null);
   const statusOf = (alert: AlertView) => statuses[alert.id] ?? alert.status;
 
   async function claim(alert: AlertView) {
@@ -56,6 +85,7 @@ export function AlertBoard({
     try {
       await onClaim(alert.id);
       setStatuses((previous) => ({ ...previous, [alert.id]: 'IN_ANALYSIS' }));
+      notifySuccess('Alerta assumido para análise');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível assumir o alerta.');
     } finally {
@@ -72,6 +102,7 @@ export function AlertBoard({
       const result = await onTransition(alertId, target, reason);
       setStatuses((previous) => ({ ...previous, [alertId]: result }));
       setReasons((previous) => ({ ...previous, [alertId]: '' }));
+      notifySuccess(target === 'APPROVED' ? 'Alerta aprovado' : 'Alerta reprovado');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível registrar a decisão.');
     } finally {
@@ -98,6 +129,7 @@ export function AlertBoard({
     try {
       const result = await onSimulateDelivery(alertId);
       setDeliveryMessages((previous) => ({ ...previous, [alertId]: result.message }));
+      notifySuccess('Entrega sintética simulada');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível simular a entrega local.');
     } finally {
@@ -112,6 +144,7 @@ export function AlertBoard({
     try {
       await (onExportPoster ?? downloadAlertPoster)(alert, format);
       setExportMessages((previous) => ({ ...previous, [alert.id]: `Comunicado ${format.toUpperCase()} gerado para download.` }));
+      notifySuccess(`Comunicado ${format.toUpperCase()} pronto`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível gerar o comunicado.');
     } finally {
@@ -131,6 +164,7 @@ export function AlertBoard({
         cancelled: 'Compartilhamento cancelado. Nenhuma publicação foi realizada.',
       };
       setExportMessages((previous) => ({ ...previous, [alert.id]: messages[result] }));
+      if (result !== 'cancelled') notifySuccess(result === 'shared' ? 'Seletor de compartilhamento aberto' : 'Arquivo pronto para publicação manual');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível preparar o compartilhamento.');
     } finally {
@@ -155,20 +189,21 @@ export function AlertBoard({
 
   if (!lockGranted) {
     return <section className="space-y-4" aria-label="Acesso à aba de alertas">
-      <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
-        A aba de alertas não está liberada para esta sessão.
-      </p>
-      {lockError && <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-rose-950">{lockError}</p>}
-      {error && <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-rose-950">{error}</p>}
-      {canRecover && lockError && <form onSubmit={(event) => void recoverLock(event)} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-        <label className="block text-sm font-medium" htmlFor="lock-recovery-reason">Justificativa para recuperação administrativa</label>
-        <textarea id="lock-recovery-reason" value={recoveryReason} onChange={(event) => setRecoveryReason(event.target.value)}
-          maxLength={300} rows={3} className="w-full rounded-lg border border-slate-300 p-3" />
-        <p className="text-xs text-slate-600">A ação será registrada na auditoria. Não inclua dados pessoais ou credenciais.</p>
-        <button type="submit" disabled={!onRecover || recoveryReason.trim().length < 3 || busyId === 'lock-recovery'}
-          className="rounded-lg bg-amber-800 px-4 py-2 font-semibold text-white disabled:opacity-50">
-          Recuperar bloqueio
-        </button>
+      <Alert role="status" className="notice notice-warn"><Clock className="notice-icon" aria-hidden="true" /><AlertDescription>A aba de alertas não está liberada para esta sessão.</AlertDescription></Alert>
+      {lockError && <Alert variant="destructive" className="notice notice-error"><TriangleAlert className="notice-icon" aria-hidden="true" /><AlertDescription>{lockError}</AlertDescription></Alert>}
+      {error && <Alert variant="destructive" className="notice notice-error"><TriangleAlert className="notice-icon" aria-hidden="true" /><AlertDescription>{error}</AlertDescription></Alert>}
+      {canRecover && lockError && <form onSubmit={(event) => void recoverLock(event)}>
+        <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+          <Field>
+            <FieldLabel htmlFor="lock-recovery-reason">Justificativa para recuperação administrativa</FieldLabel>
+            <Textarea id="lock-recovery-reason" value={recoveryReason} onChange={(event) => setRecoveryReason(event.target.value)}
+              maxLength={300} rows={3} className="w-full" />
+          </Field>
+          <p className="text-xs text-slate-600">A ação será registrada na auditoria. Não inclua dados pessoais ou credenciais.</p>
+          <Button type="submit" disabled={!onRecover || recoveryReason.trim().length < 3 || busyId === 'lock-recovery'} className="button button-primary">
+            <Activity size={16} aria-hidden="true" />Recuperar bloqueio
+          </Button>
+        </Card>
       </form>}
     </section>;
   }
@@ -178,17 +213,19 @@ export function AlertBoard({
       <h1 id="alert-queue-title" className="text-2xl font-bold">Fila de alertas</h1>
       <p className="text-sm text-slate-600">Conteúdo sintético para desenvolvimento local. Não há publicação externa nesta etapa.</p>
     </div>
-    {error && <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-rose-950">{error}</p>}
-    {alerts.length === 0 ? <p className="rounded-xl bg-white p-5 text-slate-600">Nenhum alerta sintético disponível.</p> : (
+    {error && <Alert variant="destructive" className="notice notice-error"><TriangleAlert className="notice-icon" aria-hidden="true" /><AlertDescription>{error}</AlertDescription></Alert>}
+    {alerts.length === 0 ? <Card className="rounded-xl bg-white p-5 text-slate-600">Nenhum alerta sintético disponível.</Card> : (
       <ul className="grid gap-3">
         {alerts.map((alert) => {
           const status = statusOf(alert);
           const canExportPoster = canExportAlertPoster({ ...alert, status });
           const posterPreview = canExportPoster ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(buildAlertPosterSvg(alert))}` : null;
-          return <li key={alert.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          const StatusIcon = statusIcons[status] ?? Activity;
+          return <li key={alert.id}>
+            <Card className="alert-item rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h2 className="font-semibold">{alert.title}</h2>
-              <span className="rounded-full bg-sky-100 px-3 py-1 text-sm">{statusLabels[status] ?? status}</span>
+              <Badge variant="secondary" className={`status-chip ${statusTones[status] ?? 'status-info'}`}><StatusIcon size={14} aria-hidden="true" />{statusLabels[status] ?? status}</Badge>
             </div>
             <p className="mt-2 text-slate-700">{alert.summary}</p>
             <p className="mt-2 text-xs italic text-slate-500">Incerteza: conteúdo sintético, sem leitura observada nem validação por fonte externa nesta etapa.</p>
@@ -209,53 +246,69 @@ export function AlertBoard({
               </ul>
             </div>}
 
-            {status === 'AWAITING_TRIAGE' && <button disabled={busyId === alert.id} onClick={() => void claim(alert)}
-              className="mt-4 rounded-lg bg-sky-800 px-4 py-2 font-semibold text-white disabled:opacity-50">Assumir alerta</button>}
+            {status === 'AWAITING_TRIAGE' && <Button disabled={busyId === alert.id} onClick={() => void claim(alert)}
+              className="mt-4 button button-primary"><Activity size={16} aria-hidden="true" />Assumir alerta</Button>}
             {status === 'IN_ANALYSIS' && <div className="mt-4 space-y-3">
-              <label className="block text-sm font-medium" htmlFor={`decision-reason-${alert.id}`}>Motivo da decisão</label>
-              <textarea id={`decision-reason-${alert.id}`} value={reasons[alert.id] ?? ''}
+              <Field>
+                <FieldLabel htmlFor={`decision-reason-${alert.id}`}>Motivo da decisão</FieldLabel>
+                <Textarea id={`decision-reason-${alert.id}`} value={reasons[alert.id] ?? ''}
                 onChange={(event) => setReasons((previous) => ({ ...previous, [alert.id]: event.target.value }))}
-                maxLength={300} rows={3} className="w-full rounded-lg border border-slate-300 p-3" />
+                maxLength={300} rows={3} className="w-full" />
+              </Field>
               <p className="text-xs text-slate-600">A decisão não publica nem envia o alerta. Não inclua dados pessoais ou credenciais.</p>
               <div className="flex flex-wrap gap-2">
-                <button disabled={(reasons[alert.id]?.trim().length ?? 0) < 3 || busyId === alert.id}
-                  onClick={() => void decide(alert.id, 'APPROVED')} className="rounded-lg bg-emerald-800 px-4 py-2 font-semibold text-white disabled:opacity-50">Aprovar</button>
-                <button disabled={(reasons[alert.id]?.trim().length ?? 0) < 3 || busyId === alert.id}
-                  onClick={() => void decide(alert.id, 'REJECTED')} className="rounded-lg border border-rose-700 px-4 py-2 font-semibold text-rose-900 disabled:opacity-50">Reprovar</button>
+                <Button disabled={(reasons[alert.id]?.trim().length ?? 0) < 3 || busyId === alert.id}
+                  onClick={() => void decide(alert.id, 'APPROVED')} className="button button-primary"><CircleCheck size={16} aria-hidden="true" />Aprovar</Button>
+                <Button variant="destructive" disabled={(reasons[alert.id]?.trim().length ?? 0) < 3 || busyId === alert.id}
+                  onClick={() => void decide(alert.id, 'REJECTED')} className="button button-danger"><CircleX size={16} aria-hidden="true" />Reprovar</Button>
               </div>
             </div>}
             {status === 'APPROVED' && <div className="mt-4 space-y-2">
-              {posterPreview && <details className="max-w-xl rounded-lg border border-slate-200 p-3">
-                <summary className="cursor-pointer text-sm font-semibold text-sky-900">Pré-visualizar arte do comunicado</summary>
-                <img className="mt-3 w-full rounded-lg border border-slate-200" src={posterPreview} alt="Prévia do comunicado sintético aprovado" />
-              </details>}
-              {canExportPoster && <div className="flex flex-wrap gap-2">
-                <button disabled={busyId === alert.id} onClick={() => void exportPoster(alert, 'png')}
-                  className="rounded-lg bg-sky-800 px-4 py-2 font-semibold text-white disabled:opacity-50">
-                  Baixar comunicado em PNG
-                </button>
-                <button disabled={busyId === alert.id} onClick={() => void exportPoster(alert, 'jpeg')}
-                  className="rounded-lg border border-sky-800 px-4 py-2 font-semibold text-sky-900 disabled:opacity-50">
-                  Baixar comunicado em JPEG
-                </button>
-                <button disabled={busyId === alert.id} onClick={() => void sharePoster(alert)}
-                  className="rounded-lg border border-emerald-800 px-4 py-2 font-semibold text-emerald-900 disabled:opacity-50">
-                  Compartilhar manualmente
-                </button>
-              </div>}
-              {exportMessages[alert.id] && <p role="status" className="text-sm text-emerald-900">{exportMessages[alert.id]}</p>}
+              {canExportPoster && onViewPublicPreview && <Button type="button" variant="outline" className="button button-outline"
+                onClick={() => onViewPublicPreview(alert.id)}><Eye size={16} aria-hidden="true" />Ver no painel público</Button>}
+              {posterPreview && <Dialog open={previewAlertId === alert.id}
+                onOpenChange={(open) => setPreviewAlertId(open ? alert.id : null)}>
+                <DialogTrigger render={<Button type="button" variant="outline" className="button button-outline" />}>
+                  <Eye size={16} aria-hidden="true" />Pré-visualizar arte do comunicado
+                </DialogTrigger>
+                <DialogContent className="poster-preview-dialog">
+                  <DialogHeader>
+                    <DialogTitle>Pré-visualização do comunicado</DialogTitle>
+                    <DialogDescription>Arte sintética do alerta aprovado. Revise antes de baixar ou compartilhar manualmente.</DialogDescription>
+                  </DialogHeader>
+                  <img className="w-full rounded-lg border border-slate-200" src={posterPreview} alt="Prévia do comunicado sintético aprovado" />
+                </DialogContent>
+              </Dialog>}
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button type="button" variant="outline" className="button button-outline" />}>
+                  <EllipsisVertical size={16} aria-hidden="true" />Mais ações do comunicado
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  {canExportPoster && <>
+                    <DropdownMenuItem disabled={busyId === alert.id} onClick={() => void exportPoster(alert, 'png')}>
+                      <Download size={16} aria-hidden="true" />Baixar comunicado em PNG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled={busyId === alert.id} onClick={() => void exportPoster(alert, 'jpeg')}>
+                      <Download size={16} aria-hidden="true" />Baixar comunicado em JPEG
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled={busyId === alert.id} onClick={() => void sharePoster(alert)}>
+                      <Share2 size={16} aria-hidden="true" />Compartilhar manualmente
+                    </DropdownMenuItem>
+                  </>}
+                  <DropdownMenuItem disabled={busyId === alert.id} onClick={() => void simulateDelivery(alert.id)}>
+                    <BellRing size={16} aria-hidden="true" />Simular entrega local
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {exportMessages[alert.id] && <Alert role="status" className="notice notice-success"><CircleCheck className="notice-icon" aria-hidden="true" /><AlertDescription>{exportMessages[alert.id]}</AlertDescription></Alert>}
               <p className="text-xs text-slate-600">A arte usa somente o conteúdo aprovado e exibe um aviso de demonstração sintética. O compartilhamento abre o seletor do dispositivo para você confirmar; não há publicação automática.</p>
-              <button disabled={busyId === alert.id} onClick={() => void simulateDelivery(alert.id)}
-                className="rounded-lg border border-sky-800 px-4 py-2 font-semibold text-sky-900 disabled:opacity-50">
-                Simular entrega local
-              </button>
               <p className="text-xs text-slate-600">Usa apenas cadastros sintéticos ativos e consentidos. Não envia mensagens nem chama serviços externos.</p>
-              {deliveryMessages[alert.id] && <p role="status" className="text-sm text-emerald-900">{deliveryMessages[alert.id]}</p>}
+              {deliveryMessages[alert.id] && <Alert role="status" className="notice notice-success"><CircleCheck className="notice-icon" aria-hidden="true" /><AlertDescription>{deliveryMessages[alert.id]}</AlertDescription></Alert>}
             </div>}
 
             <div className="mt-4 border-t border-slate-100 pt-3">
-              <button onClick={() => void toggleAudit(alert.id)} aria-expanded={auditOpen[alert.id] ?? false}
-                className="text-sm font-medium text-sky-900 underline">Histórico da auditoria</button>
+              <Button variant="ghost" onClick={() => void toggleAudit(alert.id)} aria-expanded={auditOpen[alert.id] ?? false}
+                className="button button-quiet"><ClipboardList size={16} aria-hidden="true" />Histórico da auditoria</Button>
               {auditOpen[alert.id] && <ol className="mt-3 space-y-2" aria-label={`Histórico de ${alert.title}`}>
                 {(auditEvents[alert.id] ?? []).map((event) => <li key={event.id} className="rounded-lg bg-slate-50 p-3 text-sm">
                   <p className="font-medium">{auditLabels[event.action] ?? event.action}</p>
@@ -274,6 +327,7 @@ export function AlertBoard({
                 {auditEvents[alert.id]?.length === 0 && <li className="text-sm text-slate-600">Nenhum evento de auditoria.</li>}
               </ol>}
             </div>
+            </Card>
           </li>;
         })}
       </ul>

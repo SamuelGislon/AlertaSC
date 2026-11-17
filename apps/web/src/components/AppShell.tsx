@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
+import { Circle, LogOut, type LucideIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button.js';
 
 export interface ShellNavigationItem {
   id: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 interface AppShellProps {
@@ -23,30 +25,32 @@ const areaLabels = {
 
 export function AppShell({ area, navigation, activeItem, onNavigate, onLogout, children }: AppShellProps) {
   const renderNavigation = (label: string) => <nav className={label === 'Navegação móvel' ? 'bottom-nav' : 'main-nav'} aria-label={label}>
-    {navigation.map((item) => <button key={item.id} type="button" className="nav-button"
+    {navigation.map((item) => <Button key={item.id} type="button" variant="ghost" className="nav-button"
       aria-current={activeItem === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}>
-      <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+      <item.icon className="nav-icon" size={18} strokeWidth={1.9} aria-hidden="true" focusable="false" />
       <span>{item.label}</span>
-    </button>)}
+    </Button>)}
   </nav>;
 
   return <div className="app-shell">
     <header className="app-header">
       <div className="header-inner">
         <a href="#" className="brand-block" onClick={(event) => { event.preventDefault(); onNavigate(area === 'operator' ? 'overview' : 'public'); }}>
-          <span className="brand-mark" aria-hidden="true">AS</span>
-          <span><span className="brand-name">AlertaSC</span><span className="brand-caption">Presidente Getúlio · SC</span></span>
+          <span className="brand-mark" aria-hidden="true">CA</span>
+          <span><span className="brand-name">Clima em Alerta</span><span className="brand-caption">Presidente Getúlio · SC</span></span>
         </a>
         {renderNavigation('Navegação principal')}
         <div className="header-account">
           <span className="role-chip">{areaLabels[area]}</span>
-          <span className="demo-chip"><span aria-hidden="true">●</span> Dados sintéticos</span>
-          {onLogout && <button type="button" className="button button-outline logout-button" onClick={onLogout}>Sair</button>}
+          <span className="demo-chip"><Circle size={8} fill="currentColor" aria-hidden="true" /> Dados sintéticos</span>
+          {onLogout && <Button type="button" variant="outline" className="button button-outline logout-button" onClick={onLogout}>
+            <LogOut size={16} aria-hidden="true" /> Sair
+          </Button>}
         </div>
       </div>
     </header>
     <main className="page" id="main-content" tabIndex={-1}>{children}</main>
     {renderNavigation('Navegação móvel')}
-    <footer className="page-footer">AlertaSC · ambiente de demonstração · dados fictícios · sem observação oficial</footer>
+    <footer className="page-footer">Clima em Alerta · Presidente Getúlio · SC</footer>
   </div>;
 }

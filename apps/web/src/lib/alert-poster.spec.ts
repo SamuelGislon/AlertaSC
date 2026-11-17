@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AlertView } from '../api.js';
-import { buildAlertPosterSvg, canExportAlertPoster, createAlertPosterBlob } from './alert-poster.js';
+import { buildAlertPosterSvg, canExportAlertPoster, createAlertPosterBlob, shareAlertPoster } from './alert-poster.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -48,6 +48,7 @@ describe('approved synthetic alert poster', () => {
     expect(text).toContain('O Rio Índios pode atingir o nível de atenção às 18h desta sexta-feira.');
     expect(text).toContain('Precipitação acumulada em 1 hora: 5.2 cm → 52 mm');
     expect(text).toContain('Presidente Getúlio/SC');
+    expect(text).toContain('Clima em Alerta');
     expect(text).toContain('MATERIAL DE DEMONSTRAÇÃO');
     expect(text).toContain('não representam condição atual');
     expect(svg).toContain('width="1080"');
@@ -90,5 +91,27 @@ describe('approved synthetic alert poster', () => {
     expect(canvas.height).toBe(2920);
     expect(context.scale).toHaveBeenCalledWith(2, 2);
     expect(context.drawImage).toHaveBeenCalled();
+  });
+
+  it('uses the current product brand in the manual sharing sheet', async () => {
+    class LoadedSvgImage {
+      naturalWidth = 1080;
+      naturalHeight = 1460;
+      onload: ((event: Event) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      set src(_value: string) { queueMicrotask(() => this.onload?.(new Event('load'))); }
+    }
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('Image', LoadedSvgImage as unknown as typeof Image);
+    vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:poster'), revokeObjectURL: vi.fn() } as unknown as typeof URL);
+    vi.stubGlobal('navigator', { share, canShare: vi.fn().mockReturnValue(true) });
+    const context = { scale: vi.fn(), drawImage: vi.fn() };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback, type) => {
+      callback(new Blob(['encoded'], { type: type ?? 'image/png' }));
+    });
+
+    expect(await shareAlertPoster(alert)).toBe('shared');
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: 'Comunicado Clima em Alerta' }));
   });
 });

@@ -1,26 +1,33 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { House, MessageCircle, UserRound } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import { AppShell, type ShellNavigationItem } from './AppShell.js';
 
 const navigation: ShellNavigationItem[] = [
-  { id: 'public', label: 'Início', icon: '⌂' },
-  { id: 'citizen', label: 'Cadastro', icon: '○' },
-  { id: 'feedback', label: 'Retorno', icon: '♡' },
+  { id: 'public', label: 'Início', icon: House },
+  { id: 'citizen', label: 'Cadastro', icon: UserRound },
+  { id: 'feedback', label: 'Retorno', icon: MessageCircle },
 ];
 
 describe('AppShell', () => {
-  it('keeps the AlertaSC brand and provides the same profile navigation in header and mobile bar', () => {
+  it('keeps the Clima em Alerta brand and provides the same profile navigation in header and mobile bar', () => {
     render(<AppShell area="public" navigation={navigation} activeItem="public" onNavigate={vi.fn()}>
       <h1>Painel público</h1>
     </AppShell>);
 
-    expect(screen.getByRole('link', { name: /AlertaSC/ })).toBeDefined();
+    expect(screen.getByRole('link', { name: /Clima em Alerta/ })).toBeDefined();
+    expect(screen.getByText('CA')).toBeDefined();
+    expect(screen.queryByText('AlertaSC')).toBeNull();
     expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeDefined();
     expect(screen.getByRole('navigation', { name: 'Navegação móvel' })).toBeDefined();
     expect(screen.getAllByRole('button', { name: /Cadastro/ })).toHaveLength(2);
     expect(screen.getByText('Dados sintéticos')).toBeDefined();
+    expect(screen.queryByText(/ambiente de demonstração|dados fictícios/)).toBeNull();
     expect(screen.queryByText(/Defesa Civil|Prefeitura/)).toBeNull();
+    const decorativeIcons = document.querySelectorAll('.nav-icon[aria-hidden="true"]');
+    expect(decorativeIcons.length).toBe(6);
+    expect(document.body.textContent).not.toMatch(/[⌂○♡◆▥◷]/u);
   });
 
   it('marks the current destination and sends navigation actions to the app shell', async () => {
