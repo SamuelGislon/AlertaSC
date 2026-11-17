@@ -89,7 +89,7 @@ describe('AlertaSC API with PostgreSQL', () => {
     );
     expect(alert[0]).toEqual(expect.objectContaining({
       title: 'Atenção para cheias — Rio Índios',
-      summary: expect.stringMatching(/sintétic|fictíc/i),
+      summary: expect.stringContaining('Acompanhe as condições do Rio Índios'),
       area_label: expect.stringMatching(/Rio Índios.*Presidente Getúlio|Presidente Getúlio.*Rio Índios/i),
       synthetic: true,
     }));

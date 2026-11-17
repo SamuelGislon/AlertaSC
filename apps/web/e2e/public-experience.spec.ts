@@ -18,7 +18,7 @@ test('keeps the public panel within the five supported viewport widths', async (
   ]) {
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(page).toHaveTitle('Clima em Alerta — demonstração local');
+    await expect(page).toHaveTitle('Clima em Alerta — Presidente Getúlio');
     await expect(page.getByRole('heading', { name: /Acompanhe as condições em Presidente Getúlio/ })).toBeVisible();
 
     const layout = await page.evaluate(() => ({
@@ -156,7 +156,7 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
   const demoAlert = () => ({
     id: 'rio-indios-video-demo',
     title: 'Atenção para cheias — Rio Índios',
-    summary: 'Demonstração sintética. Os valores abaixo são fictícios e não representam observações reais.',
+    summary: 'Acompanhe as condições do Rio Índios e siga as orientações da Defesa Civil.',
     source: 'Fixture local — estação fictícia PG-01',
     area: 'Rio Índios — Presidente Getúlio/SC',
     status: alertStatus,
@@ -238,7 +238,7 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
     alertStatus = 'AWAITING_TRIAGE';
     await page.setViewportSize(viewport);
     await page.goto('/');
-    await expect(page).toHaveTitle('Clima em Alerta — demonstração local');
+    await expect(page).toHaveTitle('Clima em Alerta — Presidente Getúlio');
     await expect(page.getByRole('button', { name: 'Ver no painel público' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Acesso do operador' }).click();
     await expect(page.getByRole('heading', { name: 'Entrar no Clima em Alerta' })).toBeVisible();
@@ -260,7 +260,8 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
     await expect(page.getByRole('heading', { name: 'Atenção para cheias — Rio Índios' })).toBeVisible();
     await expect(page.getByText('Rio Índios — Presidente Getúlio/SC')).toBeVisible();
     await expect(page.getByText('4,5 m')).toBeVisible();
-    await expect(page.getByText(/não representa observações meteorológicas reais/)).toBeVisible();
+    await expect(page.getByText('Dados sintéticos')).toHaveCount(1);
+    await expect(page.getByText(/não representa observações meteorológicas reais|demonstração sintética|valores sintéticos usados/i)).toHaveCount(0);
     await expect(page.getByText('Fixture local — régua fictícia RI-01')).toHaveCount(0);
     await expect(page.getByText('Estado do alerta alterado', { exact: true })).toHaveCount(0);
     await expect(page.getByText('operator-video-demo', { exact: true })).toHaveCount(0);

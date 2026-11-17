@@ -51,6 +51,6 @@ export function AppShell({ area, navigation, activeItem, onNavigate, onLogout, c
     </header>
     <main className="page" id="main-content" tabIndex={-1}>{children}</main>
     {renderNavigation('Navegação móvel')}
-    <footer className="page-footer">Clima em Alerta · ambiente de demonstração · dados fictícios · sem observação oficial</footer>
+    <footer className="page-footer">Clima em Alerta · Presidente Getúlio · SC</footer>
   </div>;
 }

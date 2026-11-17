@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ArrowLeft, ArrowRight, CloudRain, CloudSun, TriangleAlert, WavesHorizontal, Wind } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.js';
+import { Alert, AlertDescription } from '@/components/ui/alert.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import { Card } from '@/components/ui/card.js';
@@ -18,8 +18,8 @@ interface PublicDashboardProps {
 
 const sampleAlerts: PublicAlert[] = [{
   id: 'public-alert-synthetic-01',
-  title: 'Exemplo de aviso de chuva intensa',
-  summary: 'Conteúdo sintético para apresentar a composição de um comunicado público. Nenhum risco atual foi confirmado.',
+  title: 'Atenção para cheias — Rio Índios',
+  summary: 'Acompanhe as condições do Rio Índios e siga as orientações da Defesa Civil.',
   area: 'Rio Índios — Presidente Getúlio/SC',
   status: 'APPROVED',
   generatedAt: new Date(Date.now() - 15 * 60_000).toISOString(),
@@ -65,11 +65,6 @@ export function PublicDashboard({
         </Button>}
       </div>
 
-      <Alert className="notice notice-warn" role="note">
-        <TriangleAlert className="notice-icon" aria-hidden="true" />
-        <div><AlertTitle>Demonstração sintética</AlertTitle><AlertDescription>Este caso é fictício, não representa observações meteorológicas reais e não foi publicado.</AlertDescription></div>
-      </Alert>
-
       {state === 'loading' && <div className="grid gap-3" role="status" aria-label="Carregando prévia do alerta">
         <span className="sr-only">Carregando prévia do alerta…</span>
         <Skeleton className="h-52 rounded-3xl" aria-hidden="true" />
@@ -77,7 +72,7 @@ export function PublicDashboard({
       </div>}
       {state === 'error' && <Alert variant="destructive" role="alert">
         <TriangleAlert aria-hidden="true" />
-        <AlertDescription>Não foi possível carregar a prévia sintética deste alerta.</AlertDescription>
+        <AlertDescription>Não foi possível carregar a prévia deste alerta.</AlertDescription>
       </Alert>}
       {state === 'ready' && !focusedAlert && <Card className="empty-state p-6" role="status">
         <h1 id="focused-alert-title" className="text-xl">Prévia indisponível</h1>
@@ -87,7 +82,6 @@ export function PublicDashboard({
         <header className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 px-5 py-7 text-white sm:px-8 sm:py-9">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Badge className="border border-white/30 bg-white/15 text-white">Aviso aprovado</Badge>
-            <Badge className="border border-white/30 bg-white/15 text-white">Sintético</Badge>
           </div>
           <h1 id="focused-alert-title" className="mb-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{focusedAlert.title}</h1>
           <p className="mb-0 max-w-3xl text-base leading-relaxed text-white/95 sm:text-lg">{focusedAlert.summary}</p>
@@ -113,12 +107,12 @@ export function PublicDashboard({
 
           <Card className="rounded-2xl border-slate-200 p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between gap-2">
-              <div><h2 className="mb-1 text-base">Leituras relacionadas</h2><p className="mb-0 text-xs text-muted-foreground">Valores sintéticos usados nesta demonstração.</p></div>
+              <div><h2 className="mb-1 text-base">Leituras relacionadas</h2><p className="mb-0 text-xs text-muted-foreground">Valores registrados para este aviso.</p></div>
               <WavesHorizontal className="text-blue-700" aria-hidden="true" />
             </div>
-            {focusedAlert.relatedReadings.length === 0 ? <p className="empty-state mb-0">Nenhuma leitura sintética associada.</p> : <ul className="grid gap-3 p-0">
+            {focusedAlert.relatedReadings.length === 0 ? <p className="empty-state mb-0">Nenhuma leitura associada.</p> : <ul className="grid gap-3 p-0">
               {focusedAlert.relatedReadings.map((reading, index) => <li className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3" key={`${reading.metric}-${reading.observedAt}-${index}`}>
-                <div><p className="mb-1 text-sm font-semibold text-slate-800">{reading.metric}</p><time className="text-xs text-muted-foreground" dateTime={reading.observedAt}>Leitura sintética · {formatTime(reading.observedAt)}</time></div>
+                <div><p className="mb-1 text-sm font-semibold text-slate-800">{reading.metric}</p><time className="text-xs text-muted-foreground" dateTime={reading.observedAt}>Leitura · {formatTime(reading.observedAt)}</time></div>
                 <strong className="shrink-0 text-xl font-extrabold text-blue-900">{formatMeasurement(reading.value, reading.unit)}</strong>
               </li>)}
             </ul>}
@@ -131,7 +125,7 @@ export function PublicDashboard({
   return <div className="screen-stack">
     <section className="hero-panel" aria-labelledby="public-dashboard-title">
       <div className="hero-copy">
-        <p className="eyebrow">Painel municipal · ambiente de demonstração</p>
+        <p className="eyebrow">Painel municipal</p>
         <h1 id="public-dashboard-title">Acompanhe as condições em Presidente Getúlio</h1>
         <p>Informações de monitoramento e avisos públicos em um só lugar.</p>
         <div className="hero-actions">
@@ -142,32 +136,27 @@ export function PublicDashboard({
       <div className="hero-mark" aria-hidden="true"><CloudRain size={68} strokeWidth={1.5} /></div>
     </section>
 
-    <Alert className="notice notice-warn" role="note">
-      <TriangleAlert className="notice-icon" aria-hidden="true" />
-      <div><AlertTitle>Ambiente de demonstração</AlertTitle><AlertDescription>Todos os valores abaixo são fictícios e não representam uma condição meteorológica observada.</AlertDescription></div>
-    </Alert>
-
-    {state === 'loading' && <div className="metric-grid" role="status" aria-label="Carregando condições sintéticas">
-      <span className="sr-only">Carregando condições sintéticas…</span>
+    {state === 'loading' && <div className="metric-grid" role="status" aria-label="Carregando condições">
+      <span className="sr-only">Carregando condições…</span>
       {Array.from({ length: 4 }, (_, index) => <Skeleton key={index} className="metric-card h-32" aria-hidden="true" />)}
     </div>}
     {state === 'error' && <Alert variant="destructive" className="notice notice-error" role="alert">
       <TriangleAlert className="notice-icon" aria-hidden="true" />
-      <AlertDescription>Não foi possível carregar as condições sintéticas. Tente novamente mais tarde.</AlertDescription>
+      <AlertDescription>Não foi possível carregar as condições. Tente novamente mais tarde.</AlertDescription>
     </Alert>}
 
     {state === 'ready' && <>
-      <section className="metric-grid" aria-label="Condições sintéticas atuais">
-        <Card className="metric-card"><div className="metric-top"><span>Chuva acumulada</span><span aria-hidden="true"><CloudRain size={18} /></span></div><p className="metric-value">46 mm</p><p className="metric-foot">Exemplo sintético · últimas 6 horas</p></Card>
-        <Card className="metric-card"><div className="metric-top"><span>Rio Índios</span><span aria-hidden="true"><WavesHorizontal size={18} /></span></div><p className="metric-value">1,82 m</p><p className="metric-foot">Leitura de demonstração · 15h20</p></Card>
-        <Card className="metric-card"><div className="metric-top"><span>Previsão de chuva</span><span aria-hidden="true"><CloudSun size={18} /></span></div><p className="metric-value">20 mm</p><p className="metric-foot">Próximas 6 horas · sintética</p></Card>
-        <Card className="metric-card"><div className="metric-top"><span>Vento</span><span aria-hidden="true"><Wind size={18} /></span></div><p className="metric-value">24 km/h</p><p className="metric-foot">Exemplo sintético · 15h20</p></Card>
+      <section className="metric-grid" aria-label="Condições atuais">
+        <Card className="metric-card"><div className="metric-top"><span>Chuva acumulada</span><span aria-hidden="true"><CloudRain size={18} /></span></div><p className="metric-value">46 mm</p><p className="metric-foot">Últimas 6 horas</p></Card>
+        <Card className="metric-card"><div className="metric-top"><span>Rio Índios</span><span aria-hidden="true"><WavesHorizontal size={18} /></span></div><p className="metric-value">1,82 m</p><p className="metric-foot">15h20</p></Card>
+        <Card className="metric-card"><div className="metric-top"><span>Previsão de chuva</span><span aria-hidden="true"><CloudSun size={18} /></span></div><p className="metric-value">20 mm</p><p className="metric-foot">Próximas 6 horas</p></Card>
+        <Card className="metric-card"><div className="metric-top"><span>Vento</span><span aria-hidden="true"><Wind size={18} /></span></div><p className="metric-value">24 km/h</p><p className="metric-foot">15h20</p></Card>
       </section>
 
       <div className="content-grid content-grid-2">
         <Card className="surface-card card-padding">
-          <div className="section-heading"><div><h2>Condições recentes</h2><p>Série fictícia para demonstrar a leitura do painel</p></div><Badge variant="secondary" className="status-chip status-warn">SINTÉTICO</Badge></div>
-          <figure className="chart" role="img" aria-label="Gráfico sintético de precipitação nas últimas seis horas">
+          <div className="section-heading"><div><h2>Condições recentes</h2><p>Precipitação nas últimas seis horas</p></div></div>
+          <figure className="chart" role="img" aria-label="Gráfico de precipitação nas últimas seis horas">
             <svg viewBox="0 0 720 220" aria-hidden="true" preserveAspectRatio="none">
               <g fill="none" stroke="var(--line)" strokeWidth="1"><path d="M50 25H700M50 70H700M50 115H700M50 160H700" /></g>
               <g fill="var(--muted)" fontSize="11"><text x="7" y="29">60 mm</text><text x="14" y="74">40 mm</text><text x="14" y="119">20 mm</text><text x="24" y="164">0</text><text x="50" y="195">09h</text><text x="170" y="195">11h</text><text x="290" y="195">13h</text><text x="410" y="195">15h</text><text x="530" y="195">17h</text><text x="650" y="195">19h</text></g>
@@ -175,14 +164,13 @@ export function PublicDashboard({
               <path d="M50 140 C95 130 112 136 160 116 S225 96 270 110 S330 130 375 88 S445 56 490 76 S555 100 600 58 S650 45 700 51" fill="none" stroke="var(--brand)" strokeWidth="3" strokeLinecap="round" />
             </svg>
           </figure>
-          <p className="caption">Fonte demonstrativa · valores sem conexão a órgão público.</p>
         </Card>
 
         <Card className="surface-card card-padding" aria-labelledby="public-alerts-heading">
-          <div className="section-heading"><div><h2 id="public-alerts-heading">Avisos públicos</h2><p>Somente comunicados sintéticos aprovados e válidos</p></div><Badge variant="secondary" className="status-chip status-info">{visibleAlerts.length} {visibleAlerts.length === 1 ? 'aviso' : 'avisos'}</Badge></div>
+          <div className="section-heading"><div><h2 id="public-alerts-heading">Avisos públicos</h2><p>Comunicados aprovados e válidos</p></div><Badge variant="secondary" className="status-chip status-info">{visibleAlerts.length} {visibleAlerts.length === 1 ? 'aviso' : 'avisos'}</Badge></div>
           {visibleAlerts.length === 0 ? <p className="empty-state">Sem aviso público válido no momento.</p> : <ul className="alert-list">
             {visibleAlerts.map((alert) => <li className="public-alert-card" key={alert.id}>
-              <div className="alert-card-top"><Badge variant="secondary" className="status-chip status-warn">Demonstração</Badge><span className="caption">Hoje · {formatTime(alert.generatedAt)}</span></div>
+              <div className="alert-card-top"><span className="caption">Hoje · {formatTime(alert.generatedAt)}</span></div>
               <h3>{alert.title}</h3><p>{alert.summary}</p>
               <Button type="button" variant="outline" className="button button-outline" onClick={() => onNavigate('feedback')}>Ver aviso e enviar retorno</Button>
             </li>)}

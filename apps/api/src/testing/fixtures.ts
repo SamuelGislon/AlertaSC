@@ -11,7 +11,7 @@ export interface SyntheticAccountFixture {
 
 const RIO_INDIOS_DEMO = {
   title: 'Atenção para cheias — Rio Índios',
-  summary: 'Demonstração sintética: cenário fictício de cheia. Os valores não representam observações reais.',
+  summary: 'Acompanhe as condições do Rio Índios e siga as orientações da Defesa Civil.',
   area: 'Rio Índios — Presidente Getúlio/SC',
 } as const;
 

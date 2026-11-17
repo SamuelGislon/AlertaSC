@@ -23,6 +23,7 @@ describe('AppShell', () => {
     expect(screen.getByRole('navigation', { name: 'Navegação móvel' })).toBeDefined();
     expect(screen.getAllByRole('button', { name: /Cadastro/ })).toHaveLength(2);
     expect(screen.getByText('Dados sintéticos')).toBeDefined();
+    expect(screen.queryByText(/ambiente de demonstração|dados fictícios/)).toBeNull();
     expect(screen.queryByText(/Defesa Civil|Prefeitura/)).toBeNull();
     const decorativeIcons = document.querySelectorAll('.nav-icon[aria-hidden="true"]');
     expect(decorativeIcons.length).toBe(6);

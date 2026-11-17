@@ -6,8 +6,8 @@ import { PublicDashboard } from './PublicDashboard.js';
 
 const alert = (overrides: Partial<PublicAlert> = {}): PublicAlert => ({
   id: 'approved-synthetic',
-  title: 'Exemplo aprovado de chuva intensa',
-  summary: 'Comunicado sintético aprovado para demonstração.',
+  title: 'Atenção para cheias — Rio Índios',
+  summary: 'Acompanhe as condições do Rio Índios e siga as orientações da Defesa Civil.',
   area: 'Rio Índios — Presidente Getúlio/SC',
   status: 'APPROVED',
   generatedAt: '2026-10-22T12:00:00.000Z',
@@ -23,11 +23,11 @@ const alert = (overrides: Partial<PublicAlert> = {}): PublicAlert => ({
 });
 
 describe('PublicDashboard', () => {
-  it('shows synthetic local conditions and an explicit warning that values are not official observations', () => {
+  it('shows the public panel without repeating the synthetic label outside the site header', () => {
     render(<PublicDashboard alerts={[]} now={Date.parse('2026-10-22T13:00:00.000Z')} onNavigate={vi.fn()} />);
 
     expect(screen.getByRole('heading', { name: /Acompanhe as condições em Presidente Getúlio/ })).toBeDefined();
-    expect(screen.getByText(/valores abaixo são fictícios e não representam uma condição meteorológica observada/)).toBeDefined();
+    expect(screen.queryByText(/sintétic|demonstração|fictíci/i)).toBeNull();
     expect(screen.getByText('46 mm')).toBeDefined();
     expect(screen.getByText('1,82 m')).toBeDefined();
     expect(screen.getByText('Sem aviso público válido no momento.')).toBeDefined();
@@ -44,7 +44,7 @@ describe('PublicDashboard', () => {
       alert({ id: 'real', title: 'Dado não sintético', synthetic: false }),
     ]} now={Date.parse('2026-10-22T13:00:00.000Z')} onNavigate={vi.fn()} />);
 
-    expect(screen.getByText('Exemplo aprovado de chuva intensa')).toBeDefined();
+    expect(screen.getByText('Atenção para cheias — Rio Índios')).toBeDefined();
     expect(screen.queryByText('Candidato administrativo')).toBeNull();
     expect(screen.queryByText('Aviso vencido')).toBeNull();
     expect(screen.queryByText('Dado não sintético')).toBeNull();
@@ -65,7 +65,7 @@ describe('PublicDashboard', () => {
 
   it('renders loading and failure states without inventing measurements', () => {
     const { rerender } = render(<PublicDashboard alerts={[]} state="loading" onNavigate={vi.fn()} />);
-    expect(screen.getByRole('status').textContent).toContain('Carregando condições sintéticas');
+    expect(screen.getByRole('status').textContent).toContain('Carregando condições');
     expect(screen.queryByText('46 mm')).toBeNull();
 
     rerender(<PublicDashboard alerts={[]} state="error" onNavigate={vi.fn()} />);
@@ -89,10 +89,10 @@ describe('PublicDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Atenção para cheias — Rio Índios' })).toBeDefined();
     expect(screen.getByText('Rio Índios — Presidente Getúlio/SC')).toBeDefined();
     expect(screen.getByText('4,5 m')).toBeDefined();
-    expect(screen.getByText(/Demonstração sintética/)).toBeDefined();
+    expect(screen.queryByText(/sintétic|demonstração|fictíci/i)).toBeNull();
     expect(screen.getByText(/Gerado em/).closest('time')?.getAttribute('datetime')).toBe(generatedAt);
     expect(screen.getByText(/Expira em/).closest('time')?.getAttribute('datetime')).toBe(expiresAt);
-    expect(screen.queryByRole('region', { name: 'Condições sintéticas atuais' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Condições atuais' })).toBeNull();
     expect(screen.queryByRole('img', { name: /Gráfico sintético de precipitação/ })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Voltar à fila' }));
@@ -115,6 +115,6 @@ describe('PublicDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Prévia indisponível' })).toBeDefined();
     expect(screen.getByText(/não está aprovado ou válido/)).toBeDefined();
     expect(screen.queryByText('Outro aviso aprovado')).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Condições sintéticas atuais' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Condições atuais' })).toBeNull();
   });
 });
