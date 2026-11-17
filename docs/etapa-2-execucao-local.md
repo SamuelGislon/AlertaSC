@@ -1,6 +1,6 @@
 # Etapa 2 — base executável local
 
-Esta etapa fornece a estrutura inicial do monorepo, o painel, a API NestJS, o worker de expiração e o PostgreSQL/PostGIS. O ambiente é de desenvolvimento e usa somente dados sintéticos. Não informe dados reais de cidadãos nem conecte fontes externas.
+Esta etapa fornece a estrutura inicial do monorepo, o painel, a API NestJS, o worker de expiração e o PostgreSQL/PostGIS. O ambiente é de desenvolvimento e usa somente dados API. Não informe dados reais de cidadãos nem conecte fontes externas.
 
 ## Requisitos
 
@@ -54,9 +54,9 @@ mise exec node@24 -- pnpm dev
 
 Se estiver usando o CLI do Docker Desktop pelo WSL sem integração, substitua o segundo comando por `docker.exe compose up -d db`.
 
-O seed cria um operador administrador sintético somente quando ainda não há um administrador ativo. Ele imprime o CPF e a senha sintéticos uma vez no terminal; guarde-os apenas localmente. O seed não grava essas credenciais em logs da aplicação.
+O seed cria um operador administrador gerado por IA somente quando ainda não há um administrador ativo. Ele imprime o CPF e a senha API uma vez no terminal; guarde-os apenas localmente. O seed não grava essas credenciais em logs da aplicação.
 
-Se ainda não existir alerta sintético aguardando triagem, o seed cria um exemplo fictício na fila para validar a tela e a expiração. O exemplo inclui uma leitura sintética relacionada (5,2 cm convertidos para 52 mm), com origem e horário identificados; esses valores não representam observação real.
+Se ainda não existir alerta gerado por IA aguardando triagem, o seed cria um exemplo fictício na fila para validar a tela e a expiração. O exemplo inclui uma leitura sintética relacionada (5,2 cm convertidos para 52 mm), com origem e horário identificados; esses valores não representam observação real.
 
 Endereços locais padrão:
 
@@ -74,31 +74,31 @@ Em modo de teste, a conexão seleciona `alertasc_test` (ou `DATABASE_TEST_URL`).
 
 ## Navegação e telas do front-end
 
-O endereço web abre primeiro o painel público sintético. Ele apresenta valores exclusivamente demonstrativos, diferencia aviso aprovado de candidato administrativo e omite avisos que expiraram. Use a navegação para abrir o portal de preferências do cidadão, o formulário de retorno sintético e o acesso restrito do operador.
+O endereço web abre primeiro o painel público gerado por IA. Ele apresenta valores exclusivamente demonstrativos, diferencia aviso aprovado de candidato administrativo e omite avisos que expiraram. Use a navegação para abrir o portal de preferências do cidadão, o formulário de retorno gerado por IA e o acesso restrito do operador.
 
-Após autenticação, a sessão abre a fila de alertas e pode navegar para o resumo operacional, monitoramento sintético e auditoria. Administradores também veem a administração de operadores e cadastros sintéticos. Em telas estreitas, a navegação aparece na barra inferior; em telas largas, aparece no cabeçalho. A área de alertas continua exigindo o bloqueio exclusivo concedido pela API.
+Após autenticação, a sessão abre a fila de alertas e pode navegar para o resumo operacional, monitoramento gerado por IA e auditoria. Administradores também veem a administração de operadores e cadastros API. Em telas estreitas, a navegação aparece na barra inferior; em telas largas, aparece no cabeçalho. A área de alertas continua exigindo o bloqueio exclusivo concedido pela API.
 
 Os valores do painel público, do resumo e do monitoramento são fixtures locais e não representam medições atuais. Não há fonte meteorológica conectada nesta etapa. O retorno do cidadão é mantido apenas na tela durante a demonstração e não é enviado nem persistido.
 
 ## Dados de demonstração
 
-Entre com o operador sintético criado pelo seed. A aba de alertas exige que o servidor conceda o bloqueio global à sessão; duas sessões não podem operar a fila ao mesmo tempo. O portal do cidadão usa apenas fixtures sintéticas e permite editar preferências e remover o cadastro de demonstração. Não informe telefone, endereço, CPF, localização ou dados de pessoas reais.
+Entre com o operador gerado por IA criado pelo seed. A aba de alertas exige que o servidor conceda o bloqueio global à sessão; duas sessões não podem operar a fila ao mesmo tempo. O portal do cidadão usa apenas fixtures sintéticas e permite editar preferências e remover o cadastro de demonstração. Não informe telefone, endereço, CPF, localização ou dados de pessoas reais.
 
-### Revisão, auditoria e operadores sintéticos
+### Revisão, auditoria e operadores API
 
 - Na fila de alertas, a pessoa operadora pode assumir o alerta e, em seguida, aprovar ou reprovar com justificativa. A API valida as permissões, a posse do alerta e as transições; a interface não envia nem publica o conteúdo.
 - Cada alerta mostra origem sintética, área, horários, resumo, leituras relacionadas e a incerteza de não haver observação real ou validação por fonte nesta etapa. A trilha diferencia entrada bruta, normalização, revisão e entrega simulada.
-- Para alertas aprovados, **Simular entrega local** conta cadastros sintéticos ativos, consentidos e elegíveis. Cada tentativa reconsulta as preferências; a remoção bloqueia tentativas posteriores. A tela e a API deixam claro que nenhuma mensagem é enviada e nenhum serviço externo é chamado.
+- Para alertas aprovados, **Simular entrega local** conta cadastros API ativos, consentidos e elegíveis. Cada tentativa reconsulta as preferências; a remoção bloqueia tentativas posteriores. A tela e a API deixam claro que nenhuma mensagem é enviada e nenhum serviço externo é chamado.
 - Se um bloqueio órfão impedir o acesso, somente um administrador pode fazer a recuperação manual, informando justificativa. O sistema registra o evento de recuperação.
-- A aba **Operadores sintéticos** permite que um administrador provisione uma conta fictícia e desative contas sintéticas. As credenciais de provisionamento aparecem uma vez na interface e não são registradas nos logs. Nunca use essa função para criar uma conta real nesta fase.
-- A aba **Cadastros sintéticos** é uma ferramenta administrativa de demonstração; o portal do cidadão representa o cadastro voluntário, edição de preferências, consentimento e remoção, apenas com dados fictícios.
+- A aba **Operadores API** permite que um administrador provisione uma conta  e desative contas sintéticas. As credenciais de provisionamento aparecem uma vez na interface e não são registradas nos logs. Nunca use essa função para criar uma conta real nesta fase.
+- A aba **Cadastros API** é uma ferramenta administrativa de demonstração; o portal do cidadão representa o cadastro voluntário, edição de preferências, consentimento e remoção, apenas com dados fictícios.
 
 ### Arte visual do comunicado aprovado
 
-- Depois de aprovar um alerta sintético ainda válido, a fila mostra **Baixar comunicado em PNG** e **Baixar comunicado em JPEG**. Alertas aguardando triagem, em análise, reprovados ou expirados não podem ser exportados.
+- Depois de aprovar um alerta gerado por IA ainda válido, a fila mostra **Baixar comunicado em PNG** e **Baixar comunicado em JPEG**. Alertas aguardando triagem, em análise, reprovados ou expirados não podem ser exportados.
 - A arte vetorial usa o título, resumo aprovado, área, leituras sintéticas e horários do próprio alerta. O layout segue a referência visual aprovada: cabeçalho laranja, cartões informativos, ilustrações de rio/chuva/aviso e rodapé municipal com contatos 199 e 193. A marca é textual (AlertaSC); o repositório não contém o arquivo oficial de identidade visual da Defesa Civil.
 - O arquivo é rasterizado localmente no navegador em alta resolução. O SVG é construído com escaping de texto e não carrega fontes, imagens ou scripts externos.
-- A imagem recebe identificação destacada de demonstração e avisa que os dados são sintéticos e não representam condição atual. O download não chama Instagram, Telegram ou qualquer serviço externo e não publica automaticamente.
+- A imagem recebe identificação destacada de demonstração e avisa que os dados são API e não representam condição atual. O download não chama Instagram, Telegram ou qualquer serviço externo e não publica automaticamente.
 - **Compartilhar manualmente** tenta abrir o seletor nativo de compartilhamento do dispositivo com o PNG. A pessoa operadora escolhe o aplicativo/destino e confirma; se o navegador não aceitar compartilhamento de arquivos, a imagem é baixada como alternativa. Cancelar o seletor não publica nada.
 - A arte reflete apenas os campos aprovados armazenados no alerta. Para a composição específica do exemplo — incluindo texto editável, previsão de chuva/vento e orientações estruturadas — essas informações precisam existir na versão aprovada do comunicado; a edição e versionamento desse conteúdo pertencem à ALE-20. Não se deve acrescentar à arte um valor que não esteja no alerta aprovado.
 

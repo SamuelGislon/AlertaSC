@@ -42,7 +42,7 @@ export function AppShell({ area, navigation, activeItem, onNavigate, onLogout, c
         {renderNavigation('Navegação principal')}
         <div className="header-account">
           <span className="role-chip">{areaLabels[area]}</span>
-          <span className="demo-chip"><Circle size={8} fill="currentColor" aria-hidden="true" /> Dados sintéticos</span>
+          <span className="demo-chip"><Circle size={8} fill="currentColor" aria-hidden="true" /> Dados API</span>
           {onLogout && <Button type="button" variant="outline" className="button button-outline logout-button" onClick={onLogout}>
             <LogOut size={16} aria-hidden="true" /> Sair
           </Button>}

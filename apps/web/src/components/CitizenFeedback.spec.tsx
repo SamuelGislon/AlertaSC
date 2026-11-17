@@ -13,7 +13,7 @@ describe('CitizenFeedback', () => {
     expect(screen.queryByLabelText(/nome|telefone|endereço|localização/i)).toBeNull();
     await user.selectOptions(screen.getByLabelText('Sua avaliação'), 'useful');
     await user.click(screen.getByRole('button', { name: 'Enviar retorno' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(/Retorno sintético registrado/);
+    expect(await screen.findByRole('status')).toHaveTextContent(/Retorno gerado por IA registrado/);
     expect(screen.getByText(/Nenhum dado foi enviado ou persistido/)).toBeDefined();
     await user.click(screen.getByRole('button', { name: 'Voltar ao painel' }));
     expect(onNavigate).toHaveBeenCalledWith('public');

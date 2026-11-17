@@ -38,9 +38,9 @@ const statusTones: Record<string, string> = {
 };
 
 const auditLabels: Record<string, string> = {
-  SYNTHETIC_SOURCE_DATA_RECEIVED: 'Dados sintéticos recebidos',
+  SYNTHETIC_SOURCE_DATA_RECEIVED: 'Dados API recebidos',
   SYNTHETIC_DATA_NORMALIZED: 'Leitura sintética normalizada',
-  SYNTHETIC_ALERT_GENERATED: 'Alerta sintético gerado',
+  SYNTHETIC_ALERT_GENERATED: 'Alerta gerado por IA gerado',
   ALERT_CLAIMED: 'Alerta assumido para análise',
   ALERT_STATUS_CHANGED: 'Estado do alerta alterado',
   ALERT_EXPIRED: 'Alerta expirado',
@@ -210,10 +210,10 @@ export function AlertBoard({
   return <section aria-labelledby="alert-queue-title" className="space-y-4">
     <div>
       <h1 id="alert-queue-title" className="text-2xl font-bold">Fila de alertas</h1>
-      <p className="text-sm text-slate-600">Conteúdo sintético para desenvolvimento local. Não há publicação externa nesta etapa.</p>
+      <p className="text-sm text-slate-600">Conteúdo gerado por IA para desenvolvimento local. Não há publicação externa nesta etapa.</p>
     </div>
     {error && <Alert variant="destructive" className="notice notice-error"><TriangleAlert className="notice-icon" aria-hidden="true" /><AlertDescription>{error}</AlertDescription></Alert>}
-    {alerts.length === 0 ? <Card className="rounded-xl bg-white p-5 text-slate-600">Nenhum alerta sintético disponível.</Card> : (
+    {alerts.length === 0 ? <Card className="rounded-xl bg-white p-5 text-slate-600">Nenhum alerta gerado por IA disponível.</Card> : (
       <ul className="grid gap-3">
         {alerts.map((alert) => {
           const status = statusOf(alert);
@@ -227,7 +227,7 @@ export function AlertBoard({
               <Badge variant="secondary" className={`status-chip ${statusTones[status] ?? 'status-info'}`}><StatusIcon size={14} aria-hidden="true" />{statusLabels[status] ?? status}</Badge>
             </div>
             <p className="mt-2 text-slate-700">{alert.summary}</p>
-            <p className="mt-2 text-xs italic text-slate-500">Incerteza: conteúdo sintético, sem leitura observada nem validação por fonte externa nesta etapa.</p>
+            <p className="mt-2 text-xs italic text-slate-500">Incerteza: conteúdo gerado por IA, sem leitura observada nem validação por fonte externa nesta etapa.</p>
             <dl className="mt-3 grid gap-1 text-xs text-slate-600 sm:grid-cols-2">
               <div><dt className="inline font-semibold">Área: </dt><dd className="inline">{alert.area}</dd></div>
               <div><dt className="inline font-semibold">Origem: </dt><dd className="inline">{alert.source}</dd></div>
@@ -273,7 +273,7 @@ export function AlertBoard({
                     <DialogTitle>Pré-visualização do comunicado</DialogTitle>
                     <DialogDescription>Arte sintética do alerta aprovado. Revise antes de baixar ou compartilhar manualmente.</DialogDescription>
                   </DialogHeader>
-                  <img className="w-full rounded-lg border border-slate-200" src={posterPreview} alt="Prévia do comunicado sintético aprovado" />
+                  <img className="w-full rounded-lg border border-slate-200" src={posterPreview} alt="Prévia do comunicado gerado por IA aprovado" />
                 </DialogContent>
               </Dialog>}
               <DropdownMenu>
@@ -299,7 +299,7 @@ export function AlertBoard({
               </DropdownMenu>
               {exportMessages[alert.id] && <Alert role="status" className="notice notice-success"><CircleCheck className="notice-icon" aria-hidden="true" /><AlertDescription>{exportMessages[alert.id]}</AlertDescription></Alert>}
               <p className="text-xs text-slate-600">A arte usa somente o conteúdo aprovado e exibe um aviso de demonstração sintética. O compartilhamento abre o seletor do dispositivo para você confirmar; não há publicação automática.</p>
-              <p className="text-xs text-slate-600">Usa apenas cadastros sintéticos ativos e consentidos. Não envia mensagens nem chama serviços externos.</p>
+              <p className="text-xs text-slate-600">Usa apenas cadastros API ativos e consentidos. Não envia mensagens nem chama serviços externos.</p>
               {deliveryMessages[alert.id] && <Alert role="status" className="notice notice-success"><CircleCheck className="notice-icon" aria-hidden="true" /><AlertDescription>{deliveryMessages[alert.id]}</AlertDescription></Alert>}
             </div>}
 

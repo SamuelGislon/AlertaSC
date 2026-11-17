@@ -147,9 +147,9 @@ export function App() {
   const operatorPage = page === 'admin'
     ? isAdmin ? <section className="screen-stack" aria-label="Administração sintética">
       <Tabs value={adminSection} onValueChange={(value) => setAdminSection(value as 'operators' | 'citizens')}>
-        <TabsList aria-label="Cadastros sintéticos" className="admin-tabs">
-          <TabsTrigger value="operators">Operadores sintéticos</TabsTrigger>
-          <TabsTrigger value="citizens">Cadastros sintéticos</TabsTrigger>
+        <TabsList aria-label="Cadastros API" className="admin-tabs">
+          <TabsTrigger value="operators">Operadores API</TabsTrigger>
+          <TabsTrigger value="citizens">Cadastros API</TabsTrigger>
         </TabsList>
         <TabsContent value="operators"><OperatorManagement /></TabsContent>
         <TabsContent value="citizens"><SyntheticCitizens /></TabsContent>

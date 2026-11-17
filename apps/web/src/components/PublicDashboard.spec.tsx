@@ -6,7 +6,7 @@ import { PublicDashboard, type PublicAlert } from './PublicDashboard.js';
 const alert = (overrides: Partial<PublicAlert> = {}): PublicAlert => ({
   id: 'approved-synthetic',
   title: 'Exemplo aprovado de chuva intensa',
-  summary: 'Comunicado sintético aprovado para demonstração.',
+  summary: 'Comunicado gerado por IA aprovado para demonstração.',
   status: 'APPROVED',
   generatedAt: '2026-10-22T12:00:00.000Z',
   expiresAt: '2026-10-23T12:00:00.000Z',
@@ -33,13 +33,13 @@ describe('PublicDashboard', () => {
       alert(),
       alert({ id: 'candidate', title: 'Candidato administrativo', status: 'AWAITING_TRIAGE' }),
       alert({ id: 'expired', title: 'Aviso vencido', expiresAt: '2026-10-22T12:59:59.000Z' }),
-      alert({ id: 'real', title: 'Dado não sintético', synthetic: false }),
+      alert({ id: 'real', title: 'Dado não gerado por IA', synthetic: false }),
     ]} now={Date.parse('2026-10-22T13:00:00.000Z')} onNavigate={vi.fn()} />);
 
     expect(screen.getByText('Exemplo aprovado de chuva intensa')).toBeDefined();
     expect(screen.queryByText('Candidato administrativo')).toBeNull();
     expect(screen.queryByText('Aviso vencido')).toBeNull();
-    expect(screen.queryByText('Dado não sintético')).toBeNull();
+    expect(screen.queryByText('Dado não gerado por IA')).toBeNull();
   });
 
   it('offers citizen preferences, feedback and operator login navigation', async () => {

@@ -38,8 +38,8 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
       const preferences = await api.citizenMe(session.accessToken);
       setToken(session.accessToken);
       setProfile(preferences);
-      setMessage('Perfil de demonstração criado. Ele contém somente dados sintéticos.');
-      notifySuccess('Cadastro sintético iniciado');
+      setMessage('Perfil de demonstração criado. Ele contém somente dados API.');
+      notifySuccess('Cadastro gerado por IA iniciado');
     } catch {
       setMessage('Não foi possível iniciar a demonstração.');
     } finally {
@@ -103,7 +103,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
       <Activity className="notice-icon" aria-hidden="true" />
       <div>
         <AlertTitle>Demonstração local</AlertTitle>
-        <AlertDescription>Use somente dados sintéticos. O cadastro de pessoas reais está desativado até a validação institucional.</AlertDescription>
+        <AlertDescription>Use somente dados API. O cadastro de pessoas reais está desativado até a validação institucional.</AlertDescription>
       </div>
     </Alert>
     <div>
@@ -122,7 +122,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
         Iniciar cadastro de demonstração
       </Button>
     </div> : <div className="space-y-4">
-      <p className="text-sm">Cadastro sintético ativo. Consentimento de demonstração registrado.</p>
+      <p className="text-sm">Cadastro gerado por IA ativo. Consentimento de demonstração registrado.</p>
       <FieldSet className="space-y-2">
         <FieldLegend variant="label">Município</FieldLegend>
         <Field orientation="horizontal" className="items-center text-sm">
@@ -141,7 +141,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
         <FieldLegend variant="label">Canal de demonstração</FieldLegend>
         <Field orientation="horizontal" className="items-center text-sm">
           <Checkbox id="citizen-telegram" checked={profile.channels.includes('telegram')} onCheckedChange={toggleTelegram} />
-          <FieldLabel htmlFor="citizen-telegram" className="font-normal">Telegram sintético (sem envio real)</FieldLabel>
+          <FieldLabel htmlFor="citizen-telegram" className="font-normal">Telegram gerado por IA (sem envio real)</FieldLabel>
         </Field>
       </FieldSet>
       <div className="flex flex-wrap gap-3">
@@ -153,7 +153,7 @@ export function CitizenPortal({ onBackToLogin }: CitizenPortalProps) {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Remover cadastro?</AlertDialogTitle>
-              <AlertDialogDescription>O cadastro sintético será removido da base ativa e deixará de ser elegível para futuros envios simulados.</AlertDialogDescription>
+              <AlertDialogDescription>O cadastro gerado por IA será removido da base ativa e deixará de ser elegível para futuros envios simulados.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>

@@ -58,14 +58,14 @@ describe('shared Base UI controls', () => {
     const user = userEvent.setup();
     const onCheckedChange = vi.fn();
     render(<>
-      <label htmlFor="synthetic-name">Nome sintético</label>
+      <label htmlFor="synthetic-name">Nome gerado por IA</label>
       <Input id="synthetic-name" />
       <label htmlFor="synthetic-message">Mensagem</label>
       <Textarea id="synthetic-message" />
       <Checkbox aria-label="Aceito a demonstração" onCheckedChange={onCheckedChange} />
     </>);
 
-    expect(screen.getByRole('textbox', { name: 'Nome sintético' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Nome gerado por IA' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Mensagem' })).toBeInTheDocument();
     await user.click(screen.getByRole('checkbox', { name: 'Aceito a demonstração' }));
     expect(onCheckedChange).toHaveBeenCalledWith(true, expect.anything());
@@ -90,7 +90,7 @@ describe('shared Base UI controls', () => {
   it('switches tabs with the keyboard and exposes the selected panel', async () => {
     const user = userEvent.setup();
     render(<Tabs defaultValue="operators">
-      <TabsList aria-label="Cadastros sintéticos">
+      <TabsList aria-label="Cadastros API">
         <TabsTrigger value="operators">Operadores</TabsTrigger>
         <TabsTrigger value="citizens">Cidadãos</TabsTrigger>
       </TabsList>
@@ -113,7 +113,7 @@ describe('shared Base UI controls', () => {
       <DialogTrigger>Pré-visualizar</DialogTrigger>
       <DialogContent>
         <DialogTitle>Prévia do comunicado</DialogTitle>
-        <DialogDescription>Comunicado sintético.</DialogDescription>
+        <DialogDescription>Comunicado gerado por IA.</DialogDescription>
       </DialogContent>
     </Dialog>);
 
@@ -131,7 +131,7 @@ describe('shared Base UI controls', () => {
     render(<AlertDialog>
       <AlertDialogTrigger>Remover cadastro</AlertDialogTrigger>
       <AlertDialogContent>
-        <AlertDialogTitle>Remover cadastro sintético?</AlertDialogTitle>
+        <AlertDialogTitle>Remover cadastro gerado por IA?</AlertDialogTitle>
         <AlertDialogDescription>Os dados serão removidos da base ativa.</AlertDialogDescription>
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
         <AlertDialogAction onClick={onConfirm}>Confirmar remoção</AlertDialogAction>
@@ -156,7 +156,7 @@ describe('shared Base UI controls', () => {
       <TooltipProvider>
       <Tooltip>
         <TooltipTrigger aria-label="Atualizar"><RefreshCw aria-hidden="true" /></TooltipTrigger>
-        <TooltipContent>Atualizar dados sintéticos</TooltipContent>
+        <TooltipContent>Atualizar dados API</TooltipContent>
       </Tooltip>
       </TooltipProvider>
     </>);
@@ -170,6 +170,6 @@ describe('shared Base UI controls', () => {
 
     const tooltipTrigger = screen.getByRole('button', { name: 'Atualizar' });
     tooltipTrigger.focus();
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Atualizar dados sintéticos');
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Atualizar dados API');
   });
 });

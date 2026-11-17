@@ -7,7 +7,7 @@ import { AlertBoard } from './AlertBoard.js';
 const alert: AlertView = {
   id: 'alert-synthetic-1',
   title: 'Chuva sintética para teste',
-  summary: 'Leitura fictícia usada para validar a revisão.',
+  summary: 'Leitura  usada para validar a revisão.',
   source: 'Fixture sintética',
   area: 'Presidente Getúlio/SC',
   status: 'AWAITING_TRIAGE',
@@ -34,7 +34,7 @@ const callbacks = () => ({
   onLoadAudit: vi.fn().mockResolvedValue(history),
   onSimulateDelivery: vi.fn().mockResolvedValue({
     eligibleCount: 1,
-    message: 'Simulação concluída para 1 cidadão sintético. Nenhuma mensagem foi enviada.',
+    message: 'Simulação concluída para 1 cidadão gerado por IA. Nenhuma mensagem foi enviada.',
   }),
 });
 
@@ -51,7 +51,7 @@ describe('AlertBoard review workflow', () => {
     expect(screen.getByText('Fixture sintética')).toBeDefined();
     expect(screen.getByText(/Presidente Getúlio\/SC/)).toBeDefined();
     expect(screen.getByText(/Gerado em/)).toBeDefined();
-    expect(screen.getByText(/Incerteza: conteúdo sintético/)).toBeDefined();
+    expect(screen.getByText(/Incerteza: conteúdo gerado por IA/)).toBeDefined();
     expect(screen.getByRole('button', { name: 'Assumir alerta' })).toBeDefined();
   });
 
@@ -59,7 +59,7 @@ describe('AlertBoard review workflow', () => {
     const alertWithReading = {
       ...alert,
       relatedReadings: [{
-        source: 'Fixture local — estação fictícia PG-01',
+        source: 'Fixture local — estação  PG-01',
         metric: 'Precipitação acumulada em 1 hora',
         rawValue: 5.2,
         rawUnit: 'cm',
@@ -73,7 +73,7 @@ describe('AlertBoard review workflow', () => {
     render(<AlertBoard lockGranted alerts={[alertWithReading]} {...callbacks()} />);
     expect(screen.getByText('Leituras relacionadas (sintéticas)')).toBeDefined();
     expect(screen.getByText(/5.2 cm → 52 mm/)).toBeDefined();
-    expect(screen.getByText(/Fixture local — estação fictícia PG-01/)).toBeDefined();
+    expect(screen.getByText(/Fixture local — estação  PG-01/)).toBeDefined();
   });
 
   it('requires an assigned operator claim and an explicit reason before approving', async () => {
@@ -107,7 +107,7 @@ describe('AlertBoard review workflow', () => {
 
     await user.click(screen.getByRole('button', { name: 'Histórico da auditoria' }));
     await waitFor(() => expect(actions.onLoadAudit).toHaveBeenCalledWith(alert.id));
-    expect(await screen.findByText('Dados sintéticos recebidos')).toBeDefined();
+    expect(await screen.findByText('Dados API recebidos')).toBeDefined();
     expect(screen.getByText(/Precipitação · 5.2 cm/)).toBeDefined();
   });
 
@@ -134,7 +134,7 @@ describe('AlertBoard review workflow', () => {
     const previewButton = screen.getByRole('button', { name: 'Pré-visualizar arte do comunicado' });
     await user.click(previewButton);
     expect(screen.getByRole('dialog', { name: /Pré-visualização do comunicado/ })).toBeDefined();
-    expect(screen.getByRole('img', { name: 'Prévia do comunicado sintético aprovado' })).toBeDefined();
+    expect(screen.getByRole('img', { name: 'Prévia do comunicado gerado por IA aprovado' })).toBeDefined();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(previewButton).toHaveFocus();

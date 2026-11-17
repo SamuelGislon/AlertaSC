@@ -20,7 +20,7 @@ try {
     process.stdout.write('An active synthetic administrator already exists. No account was changed.\n');
   } else {
     process.stdout.write('Synthetic local administrator created. This one-time output is not stored in application logs.\n');
-    process.stdout.write(`CPF sintético: ${credentials.cpf}\nSenha sintética: ${credentials.password}\n`);
+    process.stdout.write(`CPF gerado por IA: ${credentials.cpf}\nSenha sintética: ${credentials.password}\n`);
   }
   if (alertCreated) process.stdout.write('A fictional review alert was added for the local dashboard.\n');
 } catch {

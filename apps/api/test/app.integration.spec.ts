@@ -290,7 +290,7 @@ describe('AlertaSC API with PostgreSQL', () => {
       .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
     expect(detail.body.relatedReadings).toEqual([
       expect.objectContaining({
-        source: 'Fixture local — estação fictícia PG-01',
+        source: 'Fixture local — estação  PG-01',
         metric: 'Precipitação acumulada em 1 hora',
         rawValue: 5.2,
         rawUnit: 'cm',

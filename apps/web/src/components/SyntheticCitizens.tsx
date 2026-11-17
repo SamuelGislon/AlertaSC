@@ -23,25 +23,25 @@ export function SyntheticCitizens() {
 
   async function create() {
     setLoading(true);
-    try { await api.createCitizenFixture('resident-pg-01'); await reload(); setMessage('Cadastro sintético criado.'); notifySuccess('Cadastro sintético criado'); }
-    catch { setMessage('Não foi possível criar o cadastro sintético.'); }
+    try { await api.createCitizenFixture('resident-pg-01'); await reload(); setMessage('Cadastro gerado por IA criado.'); notifySuccess('Cadastro gerado por IA criado'); }
+    catch { setMessage('Não foi possível criar o cadastro gerado por IA.'); }
     finally { setLoading(false); }
   }
 
   async function remove(id: string) {
     setLoading(true);
-    try { await api.removeCitizen(id); await reload(); setMessage('Cadastro removido da base ativa.'); notifySuccess('Cadastro sintético removido'); }
+    try { await api.removeCitizen(id); await reload(); setMessage('Cadastro removido da base ativa.'); notifySuccess('Cadastro gerado por IA removido'); }
     catch { setMessage('Não foi possível remover o cadastro.'); }
     finally { setLoading(false); }
   }
 
   return <section className="space-y-4">
     <Alert role="note" className="notice notice-warn"><Activity className="notice-icon" aria-hidden="true" /><div>
-      <AlertTitle>Ambiente de teste</AlertTitle><AlertDescription>Esta tela trabalha somente com cadastros sintéticos. Não informe dados de pessoas reais.</AlertDescription>
+      <AlertTitle>Ambiente de teste</AlertTitle><AlertDescription>Esta tela trabalha somente com cadastros API. Não informe dados de pessoas reais.</AlertDescription>
     </div></Alert>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold">Cadastros sintéticos</h1>
+        <h1 className="text-2xl font-bold">Cadastros API</h1>
         <p className="text-sm text-slate-600">Preferências de teste para Presidente Getúlio/SC.</p>
       </div>
       <Button disabled={loading} onClick={() => void create()} className="button button-primary"><UserRoundPlus size={16} aria-hidden="true" />
@@ -55,14 +55,14 @@ export function SyntheticCitizens() {
     <ul className="space-y-2">
       {citizens.map((citizen) => <li key={citizen.id}>
         <Card className="flex-row flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm">
-          <div><p className="font-medium">Morador sintético</p><p className="text-xs text-slate-500">{citizen.active ? 'Consentimento sintético ativo' : 'Sem consentimento ativo'} · Telegram</p></div>
+          <div><p className="font-medium">Morador gerado por IA</p><p className="text-xs text-slate-500">{citizen.active ? 'Consentimento gerado por IA ativo' : 'Sem consentimento ativo'} · Telegram</p></div>
           <AlertDialog open={pendingRemoval === citizen.id} onOpenChange={(open) => setPendingRemoval(open ? citizen.id : null)}>
             <AlertDialogTrigger render={<Button type="button" variant="destructive" className="button button-danger" disabled={loading} />}>
               <Trash size={16} aria-hidden="true" />Remover
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remover cadastro sintético?</AlertDialogTitle>
+                <AlertDialogTitle>Remover cadastro gerado por IA?</AlertDialogTitle>
                 <AlertDialogDescription>O cadastro deixará de ser elegível para futuras simulações e será removido da base ativa.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

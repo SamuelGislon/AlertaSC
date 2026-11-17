@@ -102,9 +102,9 @@ test('keeps the authenticated operator shell and its synthetic screens responsiv
   await page.locator('.bottom-nav').getByRole('button', { name: 'Auditoria', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Histórico e auditoria' })).toBeVisible();
   await page.locator('.bottom-nav').getByRole('button', { name: 'Administração', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Operadores sintéticos' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Cadastros sintéticos' }).click();
-  await expect(page.getByRole('heading', { name: 'Cadastros sintéticos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Operadores API' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Cadastros API' }).click();
+  await expect(page.getByRole('heading', { name: 'Cadastros API' })).toBeVisible();
 
   for (const viewport of [
     { width: 320, height: 740 },
@@ -128,7 +128,7 @@ test('keeps the authenticated operator shell and its synthetic screens responsiv
       { label: 'Monitoramento', content: /Monitoramento por região/ },
       { label: 'Alertas', content: /Fila de alertas|A aba de alertas/ },
       { label: 'Auditoria', content: /Histórico e auditoria/ },
-      { label: 'Administração', content: /Operadores sintéticos|Cadastros sintéticos/ },
+      { label: 'Administração', content: /Operadores API|Cadastros API/ },
     ]) {
       await navigation.getByRole('button', { name: destination.label, exact: true }).click();
       await expect(page.locator('#main-content')).toContainText(destination.content);
