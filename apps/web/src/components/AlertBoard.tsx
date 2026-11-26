@@ -68,6 +68,7 @@ export function AlertBoard({
   onViewPublicPreview, onExportPoster, onSharePoster, lockError, canRecover = false, onRecover,
 }: AlertBoardProps) {
   const [statuses, setStatuses] = useState<Record<string, string>>({});
+  const [claimedAlertIds, setClaimedAlertIds] = useState<Record<string, boolean>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,12 +81,14 @@ export function AlertBoard({
   const statusOf = (alert: AlertView) => statuses[alert.id] ?? alert.status;
 
   async function claim(alert: AlertView) {
+    const resuming = statusOf(alert) === 'IN_ANALYSIS';
     setBusyId(alert.id);
     setError(null);
     try {
       await onClaim(alert.id);
+      setClaimedAlertIds((previous) => ({ ...previous, [alert.id]: true }));
       setStatuses((previous) => ({ ...previous, [alert.id]: 'IN_ANALYSIS' }));
-      notifySuccess('Alerta assumido para análise');
+      notifySuccess(resuming ? 'Análise retomada' : 'Alerta assumido para análise');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível assumir o alerta.');
     } finally {
@@ -248,7 +251,12 @@ export function AlertBoard({
 
             {status === 'AWAITING_TRIAGE' && <Button disabled={busyId === alert.id} onClick={() => void claim(alert)}
               className="mt-4 button button-primary"><Activity size={16} aria-hidden="true" />Assumir alerta</Button>}
-            {status === 'IN_ANALYSIS' && <div className="mt-4 space-y-3">
+            {status === 'IN_ANALYSIS' && !claimedAlertIds[alert.id] && <div className="mt-4 space-y-3">
+              <p className="text-sm text-slate-600">Retome a análise para vincular este alerta à sua sessão antes de decidir.</p>
+              <Button disabled={busyId === alert.id} onClick={() => void claim(alert)}
+                className="button button-primary"><Activity size={16} aria-hidden="true" />Continuar análise</Button>
+            </div>}
+            {status === 'IN_ANALYSIS' && claimedAlertIds[alert.id] && <div className="mt-4 space-y-3">
               <Field>
                 <FieldLabel htmlFor={`decision-reason-${alert.id}`}>Motivo da decisão</FieldLabel>
                 <Textarea id={`decision-reason-${alert.id}`} value={reasons[alert.id] ?? ''}

@@ -150,8 +150,14 @@ export class AlertService {
       const existing = await runner.query(
         'SELECT operator_id FROM alert_claims WHERE alert_id = $1 AND released_at IS NULL FOR UPDATE',
         [alertId],
-      );
-      if (existing.length) throw new ConflictException('alert_already_claimed');
+      ) as Array<{ operator_id: string }>;
+      if (existing.length) {
+        if (existing[0]?.operator_id === principal.operatorId) {
+          await runner.commitTransaction();
+          return { claimed: true };
+        }
+        throw new ConflictException('alert_already_claimed');
+      }
 
       await runner.query(
         'INSERT INTO alert_claims (id, alert_id, operator_id, claimed_at) VALUES ($1, $2, $3, now())',

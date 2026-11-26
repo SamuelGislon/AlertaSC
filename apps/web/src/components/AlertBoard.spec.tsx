@@ -94,6 +94,35 @@ describe('AlertBoard review workflow', () => {
     expect(screen.queryByRole('button', { name: 'Reprovar' })).toBeNull();
   });
 
+  it('lets an operator resume an in-analysis alert after its previous claim was released', async () => {
+    const user = userEvent.setup();
+    const actions = callbacks();
+    const inAnalysis = { ...alert, status: 'IN_ANALYSIS' };
+    render(<AlertBoard lockGranted alerts={[inAnalysis]} {...actions} />);
+
+    expect(screen.getByRole('button', { name: 'Continuar análise' })).toBeDefined();
+    expect(screen.queryByLabelText('Motivo da decisão')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Continuar análise' }));
+
+    await waitFor(() => expect(actions.onClaim).toHaveBeenCalledWith(inAnalysis.id));
+    expect(await screen.findByLabelText('Motivo da decisão')).toBeDefined();
+  });
+
+  it('keeps decision controls hidden when another operator still owns an in-analysis alert', async () => {
+    const user = userEvent.setup();
+    const actions = callbacks();
+    actions.onClaim.mockRejectedValue(new Error('Este alerta já foi assumido por outro operador.'));
+    const inAnalysis = { ...alert, status: 'IN_ANALYSIS' };
+    render(<AlertBoard lockGranted alerts={[inAnalysis]} {...actions} />);
+
+    await user.click(screen.getByRole('button', { name: 'Continuar análise' }));
+
+    const message = await screen.findByRole('alert');
+    expect(message.textContent).toContain('assumido por outro operador');
+    expect(screen.queryByLabelText('Motivo da decisão')).toBeNull();
+  });
+
   it('loads the immutable audit history for an alert on demand', async () => {
     const user = userEvent.setup();
     const actions = callbacks();
