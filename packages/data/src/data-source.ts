@@ -11,6 +11,10 @@ export function createDataSourceOptions(env: NodeJS.ProcessEnv): DataSourceOptio
       : (env.DATABASE_URL?.trim() || defaultLocalDatabaseUrl(env));
   if (!url) throw new Error('DATABASE_URL must be configured');
 
+  const sslCa = env.DATABASE_SSL === 'true'
+    ? decodeSslCaCertificate(env.DATABASE_SSL_CA_BASE64)
+    : undefined;
+
   return {
     type: 'postgres',
     url,
@@ -20,13 +24,26 @@ export function createDataSourceOptions(env: NodeJS.ProcessEnv): DataSourceOptio
     synchronize: false,
     migrationsRun: false,
     logging: false,
-    ssl: env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : false,
+    ssl: env.DATABASE_SSL === 'true'
+      ? { ...(sslCa ? { ca: sslCa } : {}), rejectUnauthorized: true }
+      : false,
     extra: {
       application_name: 'alertasc',
       statement_timeout: 10_000,
       idle_in_transaction_session_timeout: 10_000,
     },
   };
+}
+
+function decodeSslCaCertificate(value: string | undefined): string | undefined {
+  const encoded = value?.trim();
+  if (!encoded) return undefined;
+
+  const certificate = Buffer.from(encoded, 'base64').toString('utf8');
+  if (!certificate.includes('-----BEGIN CERTIFICATE-----') || !certificate.includes('-----END CERTIFICATE-----')) {
+    throw new Error('DATABASE_SSL_CA_BASE64 must contain a PEM certificate');
+  }
+  return certificate;
 }
 
 function defaultLocalDatabaseUrl(env: NodeJS.ProcessEnv): string | undefined {

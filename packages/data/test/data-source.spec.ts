@@ -23,4 +23,25 @@ describe('database environment configuration', () => {
     const options = createDataSourceOptions({ NODE_ENV: 'production', DATABASE_URL: 'postgresql://db/alertasc' } as NodeJS.ProcessEnv);
     expect(options.url).toBe('postgresql://db/alertasc');
   });
+
+  it('uses the supplied CA certificate when production SSL verification is enabled', () => {
+    const ca = '-----BEGIN CERTIFICATE-----\npublic-test-ca\n-----END CERTIFICATE-----';
+    const options = createDataSourceOptions({
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgresql://db/alertasc',
+      DATABASE_SSL: 'true',
+      DATABASE_SSL_CA_BASE64: Buffer.from(ca, 'utf8').toString('base64'),
+    } as NodeJS.ProcessEnv);
+
+    expect(options.ssl).toEqual({ ca, rejectUnauthorized: true });
+  });
+
+  it('rejects an invalid supplied CA certificate instead of silently weakening SSL', () => {
+    expect(() => createDataSourceOptions({
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgresql://db/alertasc',
+      DATABASE_SSL: 'true',
+      DATABASE_SSL_CA_BASE64: Buffer.from('not a PEM certificate', 'utf8').toString('base64'),
+    } as NodeJS.ProcessEnv)).toThrow('DATABASE_SSL_CA_BASE64 must contain a PEM certificate');
+  });
 });
