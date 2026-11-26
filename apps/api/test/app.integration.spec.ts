@@ -5,7 +5,12 @@ import { DataSource } from 'typeorm';
 import { createDataSourceOptions } from '@alertasc/data';
 import { createApiApplication } from '../src/bootstrap.js';
 import { AppModule } from '../src/app.module.js';
-import { ensureSyntheticReviewAlert, resetSyntheticTestDatabase, seedSyntheticFixtures } from '../src/testing/fixtures.js';
+import {
+  createFirstSyntheticAdministrator,
+  ensureSyntheticReviewAlert,
+  resetSyntheticTestDatabase,
+  seedSyntheticFixtures,
+} from '../src/testing/fixtures.js';
 
 function resolveTestDatabaseUrl(): string {
   if (process.env.DATABASE_TEST_URL) return process.env.DATABASE_TEST_URL;
@@ -67,6 +72,35 @@ describe('AlertaSC API with PostgreSQL', () => {
   it('starts the API and verifies database readiness', async () => {
     expect((await request(app.getHttpServer()).get('/health')).status).toBe(200);
     expect((await request(app.getHttpServer()).get('/ready')).body.database).toBe('ready');
+  });
+
+  it('provisions a production demo operator from explicit credentials and can authenticate it', async () => {
+    await resetSyntheticTestDatabase(database);
+    const password = 'test-only-explicit-synthetic-password';
+    const account = await createFirstSyntheticAdministrator(database, { cpf: fixtures.admin.cpf, password });
+
+    expect(account?.cpf).toBe(fixtures.admin.cpf);
+    expect(account?.password).toBe(password);
+    if (!account) throw new Error('Expected the first synthetic administrator to be created');
+
+    const authenticated = await login(account);
+    expect(authenticated.accessToken).toEqual(expect.any(String));
+    expect(authenticated.cookie).toEqual(expect.arrayContaining([expect.stringContaining('alertasc_refresh=')]));
+  });
+
+  it('refuses to create random production operator credentials', async () => {
+    await resetSyntheticTestDatabase(database);
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      await expect(createFirstSyntheticAdministrator(database)).rejects.toThrow(/explicit credentials/i);
+      const administrators = await database.query(
+        "SELECT id FROM operator_accounts WHERE roles @> ARRAY['ADMIN']::text[] AND active = true",
+      );
+      expect(administrators).toHaveLength(0);
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
   });
 
   it('keeps terminal alert history and ensures one actionable synthetic demo alert', async () => {
@@ -163,7 +197,7 @@ describe('AlertaSC API with PostgreSQL', () => {
     );
     expect(upgraded[0]).toEqual(expect.objectContaining({
       title: 'Atenção para cheias — Rio Índios',
-      summary: expect.stringMatching(/sintétic|fictíc/i),
+      summary: 'Acompanhe as condições do Rio Índios e siga as orientações da Defesa Civil.',
       area_label: expect.stringMatching(/Rio Índios.*Presidente Getúlio|Presidente Getúlio.*Rio Índios/i),
       synthetic: true,
     }));
@@ -610,22 +644,27 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect(person[0].count).toBe(0);
   });
 
-  it('disables synthetic citizen fixtures in production mode', async () => {
+  it('allows only synthetic fixture flows in production synthetic-only mode', async () => {
     const session = await login();
     const previousNodeEnv = process.env.NODE_ENV;
+    const previousMode = process.env.PERSONAL_DATA_MODE;
     process.env.NODE_ENV = 'production';
+    process.env.PERSONAL_DATA_MODE = 'synthetic';
     try {
-      await request(app.getHttpServer()).post('/api/v1/citizens/fixtures')
-        .send({ fixtureKey: 'resident-pg-01' }).expect(403);
+      const citizen = await request(app.getHttpServer()).post('/api/v1/citizens/fixtures')
+        .send({ fixtureKey: 'resident-pg-01' }).expect(201);
+      expect(citizen.body.synthetic).toBe(true);
       await request(app.getHttpServer()).get('/api/v1/admin/operators')
-        .set('Authorization', `Bearer ${session.accessToken}`).expect(403);
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
       await request(app.getHttpServer()).post('/api/v1/admin/operators/fixtures')
         .set('Authorization', `Bearer ${session.accessToken}`)
-        .send({ fixtureKey: 'operator-pg-01' }).expect(403);
+        .send({ fixtureKey: 'operator-pg-01' }).expect(201);
       await request(app.getHttpServer()).patch(`/api/v1/admin/operators/${fixtures.operator.id}/disable`)
-        .set('Authorization', `Bearer ${session.accessToken}`).expect(403);
+        .set('Authorization', `Bearer ${session.accessToken}`).expect(200);
     } finally {
       process.env.NODE_ENV = previousNodeEnv;
+      if (previousMode === undefined) delete process.env.PERSONAL_DATA_MODE;
+      else process.env.PERSONAL_DATA_MODE = previousMode;
     }
   });
 });

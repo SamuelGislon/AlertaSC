@@ -1,7 +1,14 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import * as argon2 from 'argon2';
 import { DataSource } from 'typeorm';
+import { isValidCpf, normalizeCpf } from '@alertasc/domain';
+import { lookupDigest } from '@alertasc/data';
 import { makeSyntheticIdentity, formatCpf } from '../admin/synthetic.js';
+
+export interface SyntheticAdministratorCredentials {
+  cpf: string;
+  password: string;
+}
 
 export interface SyntheticAccountFixture {
   id: string;
@@ -47,10 +54,23 @@ export async function seedSyntheticFixtures(database: DataSource): Promise<{
   return { admin, operator, alertId };
 }
 
-export async function createSyntheticAccount(database: DataSource, roles: string[]): Promise<SyntheticAccountFixture> {
+export async function createSyntheticAccount(
+  database: DataSource,
+  roles: string[],
+  credentials?: SyntheticAdministratorCredentials,
+): Promise<SyntheticAccountFixture> {
   const identity = makeSyntheticIdentity(true);
+  if (credentials) {
+    const cpf = normalizeCpf(credentials.cpf);
+    if (!isValidCpf(cpf)) throw new Error('Synthetic administrator CPF is invalid.');
+    if (credentials.password.length < 12 || credentials.password.length > 128) {
+      throw new Error('Synthetic administrator password must contain 12 to 128 characters.');
+    }
+    identity.cpf = cpf;
+    identity.cpfLookupHash = lookupDigest(cpf, process.env.LOOKUP_HMAC_KEY ?? '');
+  }
   const operatorId = randomUUID();
-  const password = randomBytes(20).toString('base64url');
+  const password = credentials?.password ?? randomBytes(20).toString('base64url');
   const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
   await database.query(
     `INSERT INTO people
@@ -72,7 +92,10 @@ export async function createSyntheticAccount(database: DataSource, roles: string
   return { id: operatorId, cpf: formatCpf(identity.cpf), password };
 }
 
-export async function createFirstSyntheticAdministrator(database: DataSource): Promise<SyntheticAccountFixture | null> {
+export async function createFirstSyntheticAdministrator(
+  database: DataSource,
+  credentials?: SyntheticAdministratorCredentials,
+): Promise<SyntheticAccountFixture | null> {
   const existing = await database.query(
     "SELECT id FROM operator_accounts WHERE roles @> ARRAY['ADMIN']::text[] AND active = true LIMIT 1",
   );
@@ -90,7 +113,10 @@ export async function createFirstSyntheticAdministrator(database: DataSource): P
     }
     return null;
   }
-  const administrator = await createSyntheticAccount(database, ['ADMIN']);
+  if (!credentials && process.env.NODE_ENV === 'production') {
+    throw new Error('Production synthetic administrator bootstrap requires explicit credentials.');
+  }
+  const administrator = await createSyntheticAccount(database, ['ADMIN'], credentials);
   await database.query(
     `INSERT INTO audit_events (id, actor_id, action, entity_type, entity_id, metadata)
      VALUES ($1, NULL, 'SYNTHETIC_OPERATOR_PROVISIONED', 'operator_account', $2, '{"synthetic":true,"role":"ADMIN"}'::jsonb)`,

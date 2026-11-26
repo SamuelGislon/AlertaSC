@@ -6,18 +6,25 @@ import { createDataSourceOptions } from '@alertasc/data';
 import { createFirstSyntheticAdministrator, ensureSyntheticReviewAlert } from './testing/fixtures.js';
 
 config({ path: resolve(process.cwd(), '../../.env') });
-if (process.env.NODE_ENV === 'production' || process.env.PERSONAL_DATA_MODE !== 'synthetic') {
-  process.stderr.write('Synthetic seed is available only in a non-production synthetic environment.\n');
+if (process.env.PERSONAL_DATA_MODE !== 'synthetic') {
+  process.stderr.write('Synthetic seed requires PERSONAL_DATA_MODE=synthetic.\n');
   process.exit(1);
 }
 const database = new DataSource(createDataSourceOptions(process.env));
 try {
   await database.initialize();
   await database.runMigrations();
-  const credentials = await createFirstSyntheticAdministrator(database);
+  const credentials = await createFirstSyntheticAdministrator(
+    database,
+    process.env.SYNTHETIC_ADMIN_CPF && process.env.SYNTHETIC_ADMIN_PASSWORD
+      ? { cpf: process.env.SYNTHETIC_ADMIN_CPF, password: process.env.SYNTHETIC_ADMIN_PASSWORD }
+      : undefined,
+  );
   const alertCreated = await ensureSyntheticReviewAlert(database);
   if (!credentials) {
     process.stdout.write('An active synthetic administrator already exists. No account was changed.\n');
+  } else if (process.env.NODE_ENV === 'production') {
+    process.stdout.write('Synthetic administrator provisioned. Bootstrap credentials were not written to logs.\n');
   } else {
     process.stdout.write('Synthetic local administrator created. This one-time output is not stored in application logs.\n');
     process.stdout.write(`CPF gerado por IA: ${credentials.cpf}\nSenha sintética: ${credentials.password}\n`);

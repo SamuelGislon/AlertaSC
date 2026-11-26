@@ -38,8 +38,9 @@ export class AuthService {
       this.requireSecret('JWT_REFRESH_SECRET');
       this.requireSecret('FIELD_ENCRYPTION_KEY', 32);
       this.requireSecret('LOOKUP_HMAC_KEY');
-      if (this.config.get<string>('PERSONAL_DATA_MODE') !== 'approved') {
-        throw new Error('Production requires an explicit approved personal-data mode.');
+      const personalDataMode = this.config.get<string>('PERSONAL_DATA_MODE');
+      if (personalDataMode !== 'approved' && personalDataMode !== 'synthetic') {
+        throw new Error('Production requires an explicit approved or synthetic personal-data mode.');
       }
     }
   }

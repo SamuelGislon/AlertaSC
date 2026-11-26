@@ -8,7 +8,9 @@ O **AlertaSC** é uma plataforma para coletar, consolidar e disseminar informaç
 
 ## Executar a base local
 
-A base executável atual usa exclusivamente dados API. Siga [o guia de configuração local](docs/etapa-2-execucao-local.md) para preparar o PostgreSQL/PostGIS, executar migrações, criar o operador gerado por IA e iniciar frontend, API e worker. Ao abrir o endereço web, o sistema mostra o painel público de demonstração; o acesso de operadores é separado e continua protegido pela autenticação e pela API.
+A base executável atual usa exclusivamente dados sintéticos. Siga [o guia de configuração local](docs/etapa-2-execucao-local.md) para preparar o PostgreSQL/PostGIS, executar migrações, criar o operador gerado por IA e iniciar frontend, API e worker. Ao abrir o endereço web, o sistema mostra o painel público de demonstração; o acesso de operadores é separado e continua protegido pela autenticação e pela API.
+
+Para disponibilizar a aplicação web e habilitar o login do operador pela internet, siga o [guia de publicação da API no Render com banco Supabase](docs/publicar-demo-render-supabase.md). A primeira inicialização cria uma conta sintética a partir de credenciais definidas como variáveis protegidas do serviço; os valores não são impressos nos logs.
 
 O front-end compartilha a mesma linguagem visual entre o painel público, o portal e retorno do cidadão, e a área de operação (resumo, monitoramento gerado por IA, fila, auditoria e administração). No celular, a navegação passa para uma barra inferior. Os cartões do painel e do monitoramento são exemplos fictícios, sem conexão a órgãos públicos; avisos exibidos publicamente precisam estar aprovados e dentro da validade.
 
