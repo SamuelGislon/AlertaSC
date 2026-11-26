@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx watch src/main.ts",
+    "dev": "NODE_OPTIONS=--conditions=development tsx watch src/main.ts",
     "start": "node dist/main.js",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run --config vitest.config.ts --exclude test/**/*.integration.spec.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "seed:synthetic": "tsx src/seed-synthetic.ts"
+    "seed:synthetic": "NODE_OPTIONS=--conditions=development tsx src/seed-synthetic.ts"
   },
   "dependencies": {
     "@alertasc/data": "workspace:*",
