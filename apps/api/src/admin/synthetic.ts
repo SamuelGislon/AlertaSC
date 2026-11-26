@@ -11,7 +11,7 @@ export interface SyntheticIdentity {
   phoneCiphertext: string;
 }
 
-export function makeSyntheticIdentity(includeCpf: boolean): SyntheticIdentity {
+export function makeSyntheticIdentity(includeCpf: boolean, personType?: 'operator' | 'resident'): SyntheticIdentity {
   const nine = Array.from({ length: 9 }, () => randomInt(0, 10));
   const firstDigit = cpfDigit(nine, 10);
   const secondDigit = cpfDigit([...nine, firstDigit], 11);
@@ -23,7 +23,9 @@ export function makeSyntheticIdentity(includeCpf: boolean): SyntheticIdentity {
     personId: randomUUID(),
     cpf,
     phone,
-    fullName: includeCpf ? 'Operador gerado por IA AlertaSC' : 'Morador gerado por IA de Presidente Getúlio',
+    fullName: (personType ?? (includeCpf ? 'operator' : 'resident')) === 'operator'
+      ? 'Operador gerado por IA AlertaSC'
+      : 'Morador gerado por IA de Presidente Getúlio',
     phoneLookupHash: lookupDigest(phone, lookupKey),
     cpfLookupHash: includeCpf ? lookupDigest(cpf, lookupKey) : null,
     phoneCiphertext: encryptField(phone, requiredSecret('FIELD_ENCRYPTION_KEY')),

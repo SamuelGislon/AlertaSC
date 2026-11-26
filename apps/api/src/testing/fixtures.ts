@@ -6,7 +6,7 @@ import { lookupDigest } from '@alertasc/data';
 import { makeSyntheticIdentity, formatCpf } from '../admin/synthetic.js';
 
 export interface SyntheticAdministratorCredentials {
-  cpf: string;
+  login: string;
   password: string;
 }
 
@@ -59,15 +59,14 @@ export async function createSyntheticAccount(
   roles: string[],
   credentials?: SyntheticAdministratorCredentials,
 ): Promise<SyntheticAccountFixture> {
-  const identity = makeSyntheticIdentity(true);
+  const normalizedLogin = credentials ? normalizeSyntheticAdminLogin(credentials.login) : null;
+  const isCpfLogin = normalizedLogin !== null && isValidCpf(normalizedLogin);
+  const identity = makeSyntheticIdentity(credentials ? isCpfLogin : true, credentials ? 'operator' : undefined);
   if (credentials) {
-    const cpf = normalizeCpf(credentials.cpf);
-    if (!isValidCpf(cpf)) throw new Error('Synthetic administrator CPF is invalid.');
     if (credentials.password.length < 12 || credentials.password.length > 128) {
       throw new Error('Synthetic administrator password must contain 12 to 128 characters.');
     }
-    identity.cpf = cpf;
-    identity.cpfLookupHash = lookupDigest(cpf, process.env.LOOKUP_HMAC_KEY ?? '');
+    identity.cpfLookupHash = lookupDigest(normalizedLogin!, process.env.LOOKUP_HMAC_KEY ?? '');
   }
   const operatorId = randomUUID();
   const password = credentials?.password ?? randomBytes(20).toString('base64url');
@@ -89,7 +88,7 @@ export async function createSyntheticAccount(
      VALUES ($1, $2, false, '{}', '{}', '{}')`,
     [randomUUID(), identity.personId],
   );
-  return { id: operatorId, cpf: formatCpf(identity.cpf), password };
+  return { id: operatorId, cpf: credentials && !isCpfLogin ? normalizedLogin! : formatCpf(identity.cpf), password };
 }
 
 export async function createFirstSyntheticAdministrator(
@@ -123,6 +122,15 @@ export async function createFirstSyntheticAdministrator(
     [randomUUID(), administrator.id],
   );
   return administrator;
+}
+
+function normalizeSyntheticAdminLogin(value: string): string {
+  const cpf = normalizeCpf(value);
+  if (isValidCpf(cpf)) return cpf;
+  if (!/^[a-z0-9][a-z0-9._-]{2,63}$/i.test(value) || !/[a-z]/i.test(value)) {
+    throw new Error('Synthetic administrator login must be a valid CPF or an alphanumeric identifier.');
+  }
+  return value.toLowerCase();
 }
 
 export async function ensureSyntheticReviewAlert(database: DataSource): Promise<boolean> {

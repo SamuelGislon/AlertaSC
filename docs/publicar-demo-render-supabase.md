@@ -41,10 +41,10 @@ Cadastre as variáveis em **Environment** no Render, nunca em arquivos versionad
 | `JWT_REFRESH_SECRET` | Outro segredo aleatório exclusivo, com pelo menos 32 bytes. |
 | `FIELD_ENCRYPTION_KEY` | 32 bytes UTF-8 exatamente. |
 | `LOOKUP_HMAC_KEY` | Segredo aleatório exclusivo, com pelo menos 32 bytes. |
-| `SYNTHETIC_ADMIN_CPF` | CPF sintético válido, para a conta inicial. |
+| `SYNTHETIC_ADMIN_LOGIN` | Identificador da conta inicial. Use, por exemplo, `operador-demo`; assim não é necessário cadastrar CPF pessoal. |
 | `SYNTHETIC_ADMIN_PASSWORD` | Senha escolhida para o acesso do operador; mínimo de 12 e máximo de 128 caracteres. |
 
-Gere os quatro segredos em um gerenciador de senhas ou com uma ferramenta criptográfica local. Não reutilize a senha do banco, a chave da API pública ou os segredos JWT entre variáveis. O CPF e a senha do operador serão as credenciais usadas na tela **Operador**. Guarde-os no gerenciador de senhas; a aplicação não os mostra novamente e os logs não os imprimem.
+Gere os quatro segredos em um gerenciador de senhas ou com uma ferramenta criptográfica local. Não reutilize a senha do banco, a chave da API pública ou os segredos JWT entre variáveis. O identificador e a senha serão as credenciais usadas na tela **Operador**. O modo sintético aceita um identificador como `operador-demo`; guarde a senha no gerenciador de senhas. A aplicação não mostra a senha novamente e os logs não a imprimem.
 
 Use o Session pooler do Supabase com SSL, pois o Render Free pode não usar IPv6 para a conexão direta. O serviço usa o banco PostgreSQL diretamente; a Data API do Supabase pode continuar desligada. Antes do primeiro deploy, confira se o projeto Supabase está saudável e não pausado.
 
@@ -62,7 +62,7 @@ Faça um novo deploy do Static Site. A URL exata do site também deve estar em `
 
 1. Abra `https://<url-do-servico-api>/health` e confirme a resposta de saúde.
 2. Abra `https://<url-do-servico-api>/ready` e confirme que o banco está `ready`.
-3. Abra o site público, escolha **Operador** e entre com o CPF sintético e a senha definidos nas variáveis de bootstrap.
+3. Abra o site público, escolha **Operador** e entre com o identificador sintético e a senha definidos nas variáveis de bootstrap.
 4. Confirme que a fila de alertas carrega. Ao entrar pelo serviço gratuito, aguarde o Render acordar se a primeira requisição demorar.
 
 Se o primeiro deploy falhar, confira os nomes das variáveis e os logs do Render. O seed omite detalhes de conexão e nunca escreve o CPF ou a senha nos logs. Corrija a configuração e faça novo deploy; não cole segredos em issues, commits ou conversas.

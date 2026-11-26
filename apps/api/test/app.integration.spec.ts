@@ -74,12 +74,12 @@ describe('AlertaSC API with PostgreSQL', () => {
     expect((await request(app.getHttpServer()).get('/ready')).body.database).toBe('ready');
   });
 
-  it('provisions a production demo operator from explicit credentials and can authenticate it', async () => {
+  it('provisions and authenticates a synthetic operator using a non-personal login identifier', async () => {
     await resetSyntheticTestDatabase(database);
     const password = 'test-only-explicit-synthetic-password';
-    const account = await createFirstSyntheticAdministrator(database, { cpf: fixtures.admin.cpf, password });
+    const account = await createFirstSyntheticAdministrator(database, { login: 'operador-demo', password });
 
-    expect(account?.cpf).toBe(fixtures.admin.cpf);
+    expect(account?.cpf).toBe('operador-demo');
     expect(account?.password).toBe(password);
     if (!account) throw new Error('Expected the first synthetic administrator to be created');
 

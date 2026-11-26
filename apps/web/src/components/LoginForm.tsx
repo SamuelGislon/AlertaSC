@@ -11,14 +11,14 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSubmit, error }: LoginFormProps) {
-  const [cpf, setCpf] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
-    try { await onSubmit({ cpf, password }); }
+    try { await onSubmit({ cpf: identifier, password }); }
     finally { setSubmitting(false); }
   }
 
@@ -30,9 +30,9 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
         <p className="mt-1 text-sm text-slate-600">Acesso destinado à equipe municipal autorizada.</p>
       </div>
       <Field className="field">
-        <FieldLabel htmlFor="operator-cpf">CPF</FieldLabel>
-        <Input id="operator-cpf" autoComplete="username" inputMode="numeric" required value={cpf}
-          onChange={(event) => setCpf(event.target.value)}
+        <FieldLabel htmlFor="operator-identifier">CPF ou identificador</FieldLabel>
+        <Input id="operator-identifier" autoComplete="username" inputMode="text" required value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
           className="login-input" />
       </Field>
       <Field className="field">

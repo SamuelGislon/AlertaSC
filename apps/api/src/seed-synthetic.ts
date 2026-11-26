@@ -16,8 +16,8 @@ try {
   await database.runMigrations();
   const credentials = await createFirstSyntheticAdministrator(
     database,
-    process.env.SYNTHETIC_ADMIN_CPF && process.env.SYNTHETIC_ADMIN_PASSWORD
-      ? { cpf: process.env.SYNTHETIC_ADMIN_CPF, password: process.env.SYNTHETIC_ADMIN_PASSWORD }
+    process.env.SYNTHETIC_ADMIN_LOGIN && process.env.SYNTHETIC_ADMIN_PASSWORD
+      ? { login: process.env.SYNTHETIC_ADMIN_LOGIN, password: process.env.SYNTHETIC_ADMIN_PASSWORD }
       : undefined,
   );
   const alertCreated = await ensureSyntheticReviewAlert(database);

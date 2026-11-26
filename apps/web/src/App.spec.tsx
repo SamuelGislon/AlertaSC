@@ -47,7 +47,7 @@ describe('AlertaSC application navigation', () => {
     render(<App />);
 
     await user.click(screen.getByRole('button', { name: 'Acesso do operador' }));
-    await user.type(screen.getByLabelText('CPF'), '00000000000');
+    await user.type(screen.getByLabelText('CPF ou identificador'), '00000000000');
     await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
@@ -64,7 +64,7 @@ describe('AlertaSC application navigation', () => {
       generatedAt: new Date().toISOString(), expiresAt, synthetic: true, relatedReadings: [] }]);
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Acesso do operador' }));
-    await user.type(screen.getByLabelText('CPF'), '00000000000');
+    await user.type(screen.getByLabelText('CPF ou identificador'), '00000000000');
     await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
     const preview = await screen.findByRole('button', { name: 'Ver no painel público' });
@@ -114,7 +114,7 @@ describe('AlertaSC application navigation', () => {
     render(<App />);
     expect(screen.queryByRole('button', { name: 'Ver no painel público' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Acesso do operador' }));
-    await user.type(screen.getByLabelText('CPF'), '00000000000');
+    await user.type(screen.getByLabelText('CPF ou identificador'), '00000000000');
     await user.type(screen.getByLabelText('Senha'), 'synthetic-password');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
     expect(await screen.findByRole('heading', { name: 'Fila de alertas' })).toBeDefined();

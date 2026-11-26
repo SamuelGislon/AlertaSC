@@ -47,9 +47,16 @@ export class AuthService {
 
   async login(input: unknown): Promise<IssuedSession & { operator: { id: string; roles: OperatorRole[] } }> {
     const body = input as { cpf?: unknown; password?: unknown } | null;
-    const cpf = typeof body?.cpf === 'string' ? normalizeCpf(body.cpf) : '';
+    const submittedIdentifier = typeof body?.cpf === 'string' ? body.cpf.trim() : '';
+    const normalizedCpf = normalizeCpf(submittedIdentifier);
+    const identifier = isValidCpf(normalizedCpf)
+      ? normalizedCpf
+      : this.config.get<string>('PERSONAL_DATA_MODE') === 'synthetic'
+        && isSyntheticLoginIdentifier(submittedIdentifier)
+        ? submittedIdentifier.toLowerCase()
+        : '';
     const password = typeof body?.password === 'string' ? body.password : '';
-    if (password.length === 0 || password.length > 128 || !isValidCpf(cpf)) {
+    if (password.length === 0 || password.length > 128 || !identifier) {
       await this.performDummyHash(password);
       throw new UnauthorizedException('invalid_credentials');
     }
@@ -59,7 +66,7 @@ export class AuthService {
          FROM operator_accounts oa
          JOIN people p ON p.id = oa.person_id
         WHERE p.cpf_lookup_hash = $1 AND oa.active = true`,
-      [lookupDigest(cpf, this.requiredConfig('LOOKUP_HMAC_KEY'))],
+      [lookupDigest(identifier, this.requiredConfig('LOOKUP_HMAC_KEY'))],
     );
     const account = rows[0] as { id: string; roles: OperatorRole[]; password_hash: string } | undefined;
     if (!account || !(await argon2.verify(account.password_hash, password))) {
@@ -245,6 +252,10 @@ export class AuthService {
     );
     return { accessToken, refreshToken, sessionId, refreshExpiresAt };
   }
+}
+
+function isSyntheticLoginIdentifier(value: string): boolean {
+  return /^[a-z0-9][a-z0-9._-]{2,63}$/i.test(value) && /[a-z]/i.test(value);
 }
 
 export const REFRESH_COOKIE_NAME = REFRESH_COOKIE;
