@@ -30,7 +30,7 @@ describe('OperatorManagement', () => {
     render(<OperatorManagement />);
 
     expect(screen.getByText(/somente contas sintéticas/)).toBeDefined();
-    await user.click(screen.getByRole('button', { name: 'Provisionar operador sintético' }));
+    await user.click(screen.getByRole('button', { name: 'Provisionar operador gerado por IA' }));
     await waitFor(() => expect(api.createOperatorFixture).toHaveBeenCalledWith('operator-pg-01'));
     expect(await screen.findByText('Credenciais exibidas uma única vez')).toBeDefined();
     expect(screen.getByText('00000000000')).toBeDefined();

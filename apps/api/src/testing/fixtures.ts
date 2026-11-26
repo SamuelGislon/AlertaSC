@@ -39,7 +39,7 @@ export async function seedSyntheticFixtures(database: DataSource): Promise<{
     `INSERT INTO alerts
       (id, title, summary, source_label, area_label, status, generated_at, expires_at, created_by, synthetic,
        municipality_code, event_type)
-     VALUES ($1, $2, $3, 'Fixture local — estação fictícia PG-01', $4,
+     VALUES ($1, $2, $3, 'Fixture local — estação  PG-01', $4,
        'AWAITING_TRIAGE', $5, $6, $7, true, '4214001', 'chuva_intensa')`,
     [alertId, RIO_INDIOS_DEMO.title, RIO_INDIOS_DEMO.summary, RIO_INDIOS_DEMO.area, generatedAt, expiresAt, admin.id],
   );
@@ -56,7 +56,7 @@ export async function createSyntheticAccount(database: DataSource, roles: string
     `INSERT INTO people
       (id, full_name, cpf_lookup_hash, phone_lookup_hash, phone_ciphertext, postal_code, city,
        neighborhood, street, house_number, complement, location_consent, synthetic)
-     VALUES ($1, $2, $3, $4, $5, '89150-000', 'Presidente Getúlio', 'Bairro sintético',
+     VALUES ($1, $2, $3, $4, $5, '89150-000', 'Presidente Getúlio', 'Bairro gerado por IA',
        'Rua sintética', '1', NULL, false, true)`,
     [identity.personId, identity.fullName, identity.cpfLookupHash, identity.phoneLookupHash, identity.phoneCiphertext],
   );
@@ -147,7 +147,7 @@ export async function ensureSyntheticReviewAlert(database: DataSource): Promise<
       `INSERT INTO alerts
         (id, title, summary, source_label, area_label, status, generated_at, expires_at, created_by, synthetic,
          municipality_code, event_type)
-       VALUES ($1, $2, $3, 'Fixture local — estação fictícia PG-01', $4,
+       VALUES ($1, $2, $3, 'Fixture local — estação  PG-01', $4,
          'AWAITING_TRIAGE', $5, $6, $7, true, '4214001', 'chuva_intensa')`,
       [alertId, RIO_INDIOS_DEMO.title, RIO_INDIOS_DEMO.summary, RIO_INDIOS_DEMO.area,
         generatedAt, expiresAt, operators[0].id],
@@ -172,20 +172,20 @@ async function recordSyntheticAlertEvidence(executor: Pick<DataSource, 'query'>,
     `INSERT INTO alert_observations
       (id, alert_id, source_label, metric_label, raw_value, raw_unit, normalized_value, normalized_unit,
        observed_at, area_label, synthetic)
-     VALUES ($1, $2, 'Fixture local — estação fictícia PG-01', 'Precipitação acumulada em 1 hora',
-       5.2, 'cm', 52, 'mm', $3, 'Presidente Getúlio/SC — área fictícia', true)`,
+     VALUES ($1, $2, 'Fixture local — estação  PG-01', 'Precipitação acumulada em 1 hora',
+       5.2, 'cm', 52, 'mm', $3, 'Presidente Getúlio/SC — área ', true)`,
     [randomUUID(), alertId, observedAt],
   );
   const events = [
     {
       action: 'SYNTHETIC_SOURCE_DATA_RECEIVED', state: null,
       occurredAt: observedAt,
-      metadata: { synthetic: true, stage: 'raw', source: 'Fixture local — estação fictícia PG-01', metric: 'Precipitação acumulada em 1 hora', value: 5.2, unit: 'cm' },
+      metadata: { synthetic: true, stage: 'raw', source: 'Fixture local — estação  PG-01', metric: 'Precipitação acumulada em 1 hora', value: 5.2, unit: 'cm' },
     },
     {
       action: 'SYNTHETIC_DATA_NORMALIZED', state: null,
       occurredAt: new Date(observedAt.getTime() + 1),
-      metadata: { synthetic: true, stage: 'normalized', source: 'Normalizador sintético', metric: 'Precipitação acumulada em 1 hora', value: 52, unit: 'mm' },
+      metadata: { synthetic: true, stage: 'normalized', source: 'Normalizador gerado por IA', metric: 'Precipitação acumulada em 1 hora', value: 52, unit: 'mm' },
     },
   ];
   for (const event of events) {
@@ -203,7 +203,7 @@ async function recordSyntheticRiverLevelEvidence(
   observedAt: Date,
 ): Promise<void> {
   const metric = 'Nível do Rio Índios';
-  const source = 'Fixture local — régua fictícia RI-01';
+  const source = 'Fixture local — régua  RI-01';
   const existing = await executor.query(
     `SELECT id FROM alert_observations
       WHERE alert_id = $1 AND metric_label = $2 AND normalized_value = 4.5

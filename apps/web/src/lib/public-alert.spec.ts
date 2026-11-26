@@ -13,7 +13,7 @@ const alert: AlertView = {
   expiresAt: '2026-11-17T12:00:00.000Z',
   synthetic: true,
   relatedReadings: [{
-    source: 'Fonte interna: régua fictícia RI-01',
+    source: 'Fonte interna: régua  RI-01',
     metric: 'Nível do Rio Índios',
     rawValue: 450,
     rawUnit: 'cm',

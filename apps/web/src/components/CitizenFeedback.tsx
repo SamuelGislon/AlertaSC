@@ -41,7 +41,7 @@ export function CitizenFeedback({ onNavigate }: CitizenFeedbackProps) {
           <Button type="submit" className="button button-primary" disabled={!rating}>Enviar retorno</Button>
           <Button type="button" variant="outline" className="button button-outline" onClick={() => onNavigate('public')}><ArrowLeft size={16} aria-hidden="true" />Voltar ao painel</Button>
         </div>
-        {submitted && <Alert role="status" className="notice notice-success"><CircleCheck className="notice-icon" aria-hidden="true" /><AlertDescription>Retorno sintético registrado apenas nesta demonstração. Nenhum dado foi enviado ou persistido.</AlertDescription></Alert>}
+        {submitted && <Alert role="status" className="notice notice-success"><CircleCheck className="notice-icon" aria-hidden="true" /><AlertDescription>Retorno gerado por IA registrado apenas nesta demonstração. Nenhum dado foi enviado ou persistido.</AlertDescription></Alert>}
         <p className="caption">A avaliação existe apenas no estado desta tela e é descartada ao sair.</p>
         </Card>
       </form>

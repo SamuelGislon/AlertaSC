@@ -30,7 +30,7 @@ describe('CitizenPortal', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /Concordo em criar um cadastro somente para esta demonstração/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar cadastro de demonstração' }));
 
-    await screen.findByText('Cadastro sintético ativo. Consentimento de demonstração registrado.');
+    await screen.findByText('Cadastro gerado por IA ativo. Consentimento de demonstração registrado.');
     expect(apiMocks.createCitizenDemo).toHaveBeenCalledWith('resident-pg-01');
     fireEvent.click(screen.getByRole('checkbox', { name: 'Inundação' }));
     fireEvent.click(screen.getByRole('button', { name: 'Salvar preferências' }));

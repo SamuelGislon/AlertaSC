@@ -13,7 +13,7 @@ Preparar uma demonstração curta e confiável para o trabalho da faculdade, mos
 ## Objetivos e escopo
 
 - Exibir a marca **Clima em Alerta** nas telas usadas no vídeo.
-- Usar um único caso sintético de chuva/cheia do Rio Índios, inspirado no comunicado aprovado compartilhado pelo usuário.
+- Usar um único caso gerado por IA de chuva/cheia do Rio Índios, inspirado no comunicado aprovado compartilhado pelo usuário.
 - Demonstrar login do operador, revisão, aprovação, auditoria, prévia pública do alerta aprovado e prévia/download da arte.
 - Fazer a prévia pública refletir o mesmo alerta selecionado e aprovado na fila.
 - Mostrar aviso inequívoco de que se trata de demonstração sintética, sem observações meteorológicas reais nem publicação externa.
@@ -50,7 +50,7 @@ Aplicar o design system existente com hierarquia mais forte para o aviso: identi
 
 ## Critério de sucesso
 
-Uma gravação contínua consegue mostrar, sem trocar dados manualmente nem depender de leitura externa variável, o mesmo alerta sintético sendo revisado, aprovado, visto na prévia pública e renderizado como comunicado, com marca Clima em Alerta e aviso de demonstração visível.
+Uma gravação contínua consegue mostrar, sem trocar dados manualmente nem depender de leitura externa variável, o mesmo alerta gerado por IA sendo revisado, aprovado, visto na prévia pública e renderizado como comunicado, com marca Clima em Alerta e aviso de demonstração visível.
 
 ## Decisões deixadas para o plano de implementação
 

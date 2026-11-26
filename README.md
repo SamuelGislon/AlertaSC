@@ -8,11 +8,11 @@ O **AlertaSC** é uma plataforma para coletar, consolidar e disseminar informaç
 
 ## Executar a base local
 
-A base executável atual usa exclusivamente dados sintéticos. Siga [o guia de configuração local](docs/etapa-2-execucao-local.md) para preparar o PostgreSQL/PostGIS, executar migrações, criar o operador sintético e iniciar frontend, API e worker. Ao abrir o endereço web, o sistema mostra o painel público de demonstração; o acesso de operadores é separado e continua protegido pela autenticação e pela API.
+A base executável atual usa exclusivamente dados API. Siga [o guia de configuração local](docs/etapa-2-execucao-local.md) para preparar o PostgreSQL/PostGIS, executar migrações, criar o operador gerado por IA e iniciar frontend, API e worker. Ao abrir o endereço web, o sistema mostra o painel público de demonstração; o acesso de operadores é separado e continua protegido pela autenticação e pela API.
 
-O front-end compartilha a mesma linguagem visual entre o painel público, o portal e retorno do cidadão, e a área de operação (resumo, monitoramento sintético, fila, auditoria e administração). No celular, a navegação passa para uma barra inferior. Os cartões do painel e do monitoramento são exemplos fictícios, sem conexão a órgãos públicos; avisos exibidos publicamente precisam estar aprovados e dentro da validade.
+O front-end compartilha a mesma linguagem visual entre o painel público, o portal e retorno do cidadão, e a área de operação (resumo, monitoramento gerado por IA, fila, auditoria e administração). No celular, a navegação passa para uma barra inferior. Os cartões do painel e do monitoramento são exemplos fictícios, sem conexão a órgãos públicos; avisos exibidos publicamente precisam estar aprovados e dentro da validade.
 
-Na fila, comunicados sintéticos aprovados e ainda válidos podem ser exportados em PNG/JPEG ou enviados ao seletor nativo para compartilhamento manual; veja [como a arte de demonstração é composta e quais limites respeita](docs/etapa-2-execucao-local.md#arte-visual-do-comunicado-aprovado). A aplicação não publica automaticamente em redes sociais.
+Na fila, comunicados API aprovados e ainda válidos podem ser exportados em PNG/JPEG ou enviados ao seletor nativo para compartilhamento manual; veja [como a arte de demonstração é composta e quais limites respeita](docs/etapa-2-execucao-local.md#arte-visual-do-comunicado-aprovado). A aplicação não publica automaticamente em redes sociais.
 
 O primeiro piloto será realizado em **Presidente Getúlio/SC**, com uma arquitetura preparada para expansão aos demais municípios do estado. A plataforma deverá reduzir o tempo entre a publicação de um aviso oficial e sua comunicação à população, mantendo revisão humana, rastreabilidade e histórico de todas as decisões.
 

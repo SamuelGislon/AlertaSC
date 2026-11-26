@@ -72,7 +72,7 @@ export function buildAlertPosterSvg(alert: AlertView): string {
   const svgReadings = hasReadings ? `
     <rect x="${padding}" y="${readingTop}" width="${contentWidth}" height="${readingHeight}" rx="32" fill="#dceefb"/>
     <text class="section" x="${padding + 306}" y="${readingTop + 54}">LEITURAS RELACIONADAS</text>
-    <text class="synthetic-label" x="${padding + 306}" y="${readingTop + 88}">DADOS SINTÉTICOS</text>
+    <text class="synthetic-label" x="${padding + 306}" y="${readingTop + 88}">DADOS API</text>
     <g aria-hidden="true">
       <circle cx="${summaryIconX + 78}" cy="${readingTop + 112}" r="46" fill="#9ec2e5"/>
       <circle cx="${summaryIconX + 126}" cy="${readingTop + 98}" r="56" fill="#7ea9d4"/>
@@ -83,7 +83,7 @@ export function buildAlertPosterSvg(alert: AlertView): string {
     ${readingLines.map((line, index) => `<text class="reading" x="${readingTextX}" y="${readingTop + 126 + index * 40}">${escapeXml(line)}</text>`).join('')}
   ` : '';
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Comunicado sintético aprovado para demonstração">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Comunicado gerado por IA aprovado para demonstração">
   <defs>
     <style>
       text { font-family: Arial, Helvetica, sans-serif; }
@@ -122,7 +122,7 @@ export function buildAlertPosterSvg(alert: AlertView): string {
     <path d="M${padding + 238} ${noticeTop + 62}v24m0 13v2" stroke="#1f2937" stroke-width="8" stroke-linecap="round"/>
   </g>
   <text class="warning" x="${padding + 330}" y="${noticeTop + 61}">MATERIAL DE DEMONSTRAÇÃO</text>
-  <text class="warning" x="${padding + 330}" y="${noticeTop + 105}">Dados sintéticos; não representam condição atual.</text>
+  <text class="warning" x="${padding + 330}" y="${noticeTop + 105}">Dados API; não representam condição atual.</text>
   <text class="warning" x="${padding + 330}" y="${noticeTop + 145}">Não usar como alerta operacional.</text>
 
   <rect y="${footerTop}" width="${width}" height="${height - footerTop}" fill="#14284e"/>

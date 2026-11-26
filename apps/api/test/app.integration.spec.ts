@@ -130,8 +130,8 @@ describe('AlertaSC API with PostgreSQL', () => {
       `INSERT INTO alerts
         (id, title, summary, source_label, area_label, status, generated_at, expires_at, created_by, synthetic,
          municipality_code, event_type)
-       VALUES ($1, 'Exemplo sintético — chuva intensa', 'Fixture antiga de desenvolvimento local.',
-         'Fixture local — estação fictícia PG-01', 'Presidente Getúlio/SC — área fictícia',
+       VALUES ($1, 'Exemplo gerado por IA — chuva intensa', 'Fixture antiga de desenvolvimento local.',
+         'Fixture local — estação  PG-01', 'Presidente Getúlio/SC — área ',
          'AWAITING_TRIAGE', $2, $3, $4, true, '4214001', 'chuva_intensa')`,
       [legacyAlertId, generatedAt, expiresAt, fixtures.admin.id],
     );
@@ -139,9 +139,9 @@ describe('AlertaSC API with PostgreSQL', () => {
       `INSERT INTO alert_observations
         (id, alert_id, source_label, metric_label, raw_value, raw_unit, normalized_value, normalized_unit,
          observed_at, area_label, synthetic)
-       VALUES ('22222222-2222-4222-8222-222222222222', $1, 'Fixture local — estação fictícia PG-01',
+       VALUES ('22222222-2222-4222-8222-222222222222', $1, 'Fixture local — estação  PG-01',
          'Precipitação acumulada em 1 hora', 5.2, 'cm', 52, 'mm', $2,
-         'Presidente Getúlio/SC — área fictícia', true)`,
+         'Presidente Getúlio/SC — área ', true)`,
       [legacyAlertId, generatedAt],
     );
     await database.query(
@@ -418,7 +418,7 @@ describe('AlertaSC API with PostgreSQL', () => {
       expect(readings).toHaveLength(2);
       expect(readings).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        source: 'Fixture local — estação fictícia PG-01',
+        source: 'Fixture local — estação  PG-01',
         metric: 'Precipitação acumulada em 1 hora',
         rawValue: 5.2,
         rawUnit: 'cm',
@@ -427,7 +427,7 @@ describe('AlertaSC API with PostgreSQL', () => {
         synthetic: true,
       }),
       expect.objectContaining({
-        source: 'Fixture local — régua fictícia RI-01',
+        source: 'Fixture local — régua  RI-01',
         metric: 'Nível do Rio Índios',
         rawValue: 4.5,
         rawUnit: 'm',

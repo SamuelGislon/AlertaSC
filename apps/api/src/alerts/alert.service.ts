@@ -120,7 +120,7 @@ export class AlertService {
         synthetic: true,
         simulated: true,
         eligibleCount,
-        message: `Simulação local concluída para ${eligibleCount} cidadão(s) sintético(s). Nenhuma mensagem foi enviada; nenhuma chamada externa foi feita.`,
+        message: `Simulação local concluída para ${eligibleCount} cidadão(s) gerado por IA(s). Nenhuma mensagem foi enviada; nenhuma chamada externa foi feita.`,
       };
     } catch (error) {
       if (runner.isTransactionActive) await runner.rollbackTransaction();

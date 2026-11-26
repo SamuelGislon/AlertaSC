@@ -1,25 +1,25 @@
 # Protótipo de fluxos e diagramas do front-end
 
-Este material acompanha o [protótipo navegável](etapa-front-end.html) para revisão prevista na ALE-37. O protótipo usa apenas conteúdo sintético, mantém a marca textual AlertaSC e não conecta APIs, fontes oficiais, cadastros reais ou canais externos. Os diagramas representam o escopo aprovado e as telas previstas; não substituem os contratos técnicos das APIs.
+Este material acompanha o [protótipo navegável](etapa-front-end.html) para revisão prevista na ALE-37. O protótipo usa apenas conteúdo gerado por IA, mantém a marca textual AlertaSC e não conecta APIs, fontes oficiais, cadastros reais ou canais externos. Os diagramas representam o escopo aprovado e as telas previstas; não substituem os contratos técnicos das APIs.
 
 ## Atividade — cidadão
 
 ```mermaid
 flowchart TD
-    A[Painel público sintético] --> B{Escolhe ação}
+    A[Painel público gerado por IA] --> B{Escolhe ação}
     B -->|Consultar| C[Ver observações e previsões sintéticas]
     B -->|Preferências| D[Portal do cidadão]
-    D --> E{Cadastro sintético ativo?}
+    D --> E{Cadastro gerado por IA ativo?}
     E -->|Não| F[Consentimento de demonstração]
-    F --> G[Criar perfil sintético]
+    F --> G[Criar perfil gerado por IA]
     E -->|Sim| H[Editar município e tipos de aviso]
     G --> H
     H --> I[Salvar preferências]
     H --> J[Remover cadastro]
-    J --> K[Confirmar opt-out sintético]
+    J --> K[Confirmar opt-out gerado por IA]
     K --> L[Remover dados ativos e bloquear elegibilidade]
     B -->|Avaliar aviso| M[Selecionar retorno sobre utilidade]
-    M --> N[Registrar retorno sintético sem pedir contato]
+    M --> N[Registrar retorno gerado por IA sem pedir contato]
 ```
 
 ## Atividade — operador
@@ -136,7 +136,7 @@ flowchart LR
     OperatorShell --> Queue[Fila e revisão]
     OperatorShell --> Editor[Comunicado]
     OperatorShell --> Audit[Auditoria]
-    OperatorShell --> Admin[Operadores e cadastros sintéticos]
+    OperatorShell --> Admin[Operadores e cadastros API]
 ```
 
 ## Pontos para revisão institucional

@@ -404,7 +404,7 @@ export class AdminService {
       `INSERT INTO people
         (id, full_name, cpf_lookup_hash, phone_lookup_hash, phone_ciphertext, postal_code, city,
          neighborhood, street, house_number, complement, latitude, longitude, location_consent, synthetic)
-       VALUES ($1, $2, $3, $4, $5, '89150-000', 'Presidente Getúlio', 'Bairro sintético',
+       VALUES ($1, $2, $3, $4, $5, '89150-000', 'Presidente Getúlio', 'Bairro gerado por IA',
                'Rua sintética', '1', NULL, NULL, NULL, false, true)`,
       [identity.personId, identity.fullName, identity.cpfLookupHash, identity.phoneLookupHash, identity.phoneCiphertext],
     );

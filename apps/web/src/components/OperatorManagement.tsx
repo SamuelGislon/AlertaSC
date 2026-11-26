@@ -23,7 +23,7 @@ export function OperatorManagement() {
     setOperators(await api.operators());
   }
 
-  useEffect(() => { void reload().catch(() => setMessage('Não foi possível carregar os operadores sintéticos.')); }, []);
+  useEffect(() => { void reload().catch(() => setMessage('Não foi possível carregar os operadores.')); }, []);
 
   async function create() {
     setLoading(true);
@@ -33,10 +33,10 @@ export function OperatorManagement() {
       const created = await api.createOperatorFixture('operator-pg-01');
       setCredentials(created);
       await reload();
-      setMessage('Operador sintético provisionado. Guarde as credenciais agora; elas não serão exibidas novamente.');
-      notifySuccess('Operador sintético provisionado');
+      setMessage('Operador provisionado. Guarde as credenciais agora; elas não serão exibidas novamente.');
+      notifySuccess('Operador provisionado');
     } catch {
-      setMessage('Não foi possível provisionar o operador sintético.');
+      setMessage('Não foi possível provisionar o operador.');
     } finally {
       setLoading(false);
     }
@@ -50,26 +50,23 @@ export function OperatorManagement() {
       setPendingDisable(null);
       setCredentials(null);
       await reload();
-      setMessage('Operador sintético desativado. As sessões ativas foram revogadas.');
-      notifySuccess('Operador sintético desativado');
+      setMessage('Operador desativado. As sessões ativas foram revogadas.');
+      notifySuccess('Operador desativado');
     } catch {
-      setMessage('Não foi possível desativar o operador sintético.');
+      setMessage('Não foi possível desativar o operador.');
     } finally {
       setLoading(false);
     }
   }
 
   return <section className="space-y-4" aria-labelledby="operators-title">
-    <Alert role="note" className="notice notice-warn"><Activity className="notice-icon" aria-hidden="true" /><div>
-      <AlertTitle>Ambiente local</AlertTitle><AlertDescription>Ambiente local: somente contas sintéticas. Não informe nem cadastre dados de operadores reais antes da validação institucional.</AlertDescription>
-    </div></Alert>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 id="operators-title" className="text-2xl font-bold">Operadores sintéticos</h1>
-        <p className="text-sm text-slate-600">Provisionamento local protegido por permissão administrativa.</p>
+        <h1 id="operators-title" className="text-2xl font-bold">Operadores</h1>
+        <p className="text-sm text-slate-600">Provisionamento protegido por permissão administrativa.</p>
       </div>
       <Button disabled={loading} onClick={() => void create()} className="button button-primary"><UserRoundPlus size={16} aria-hidden="true" />
-        Provisionar operador sintético
+        Provisionar operador
       </Button>
     </div>
 
@@ -79,9 +76,9 @@ export function OperatorManagement() {
     </Alert>}
     {credentials && <Card role="region" className="space-y-2 rounded-xl border border-emerald-300 bg-emerald-50 p-4" aria-label="Credenciais temporárias do operador">
       <h2 className="font-semibold">Credenciais exibidas uma única vez</h2>
-      <p className="text-sm">Guarde em local seguro para esta demonstração sintética. Elas não são gravadas nos logs.</p>
+      <p className="text-sm">Guarde as credenciais em local seguro. Elas não serão exibidas novamente nem gravadas nos logs.</p>
       <dl className="grid gap-2 text-sm sm:grid-cols-2">
-        <div><dt className="font-semibold">CPF sintético</dt><dd><code>{credentials.oneTimeCredentials.cpf}</code></dd></div>
+        <div><dt className="font-semibold">CPF</dt><dd><code>{credentials.oneTimeCredentials.cpf}</code></dd></div>
         <div><dt className="font-semibold">Senha temporária</dt><dd><code>{credentials.oneTimeCredentials.password}</code></dd></div>
       </dl>
       <p className="break-all text-xs text-slate-600">ID técnico: {credentials.id}</p>
@@ -93,7 +90,7 @@ export function OperatorManagement() {
         <Card className="flex-row flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-sm">
           <div>
             <p className="break-all font-medium">{operator.id}</p>
-            <p className="flex flex-wrap items-center gap-2 text-xs text-slate-600"><Badge variant="secondary">{operator.roles.join(', ')}</Badge><Badge variant="secondary" className={operator.active ? 'status-chip status-good' : 'status-chip status-error'}>{operator.active ? 'Ativo' : 'Desativado'}</Badge><span>Conta sintética</span></p>
+            <p className="flex flex-wrap items-center gap-2 text-xs text-slate-600"><Badge variant="secondary">{operator.roles.join(', ')}</Badge><Badge variant="secondary" className={operator.active ? 'status-chip status-good' : 'status-chip status-error'}>{operator.active ? 'Ativo' : 'Desativado'}</Badge></p>
           </div>
           {operator.active && <AlertDialog open={pendingDisable === operator.id}
             onOpenChange={(open) => setPendingDisable(open ? operator.id : null)}>
@@ -103,7 +100,7 @@ export function OperatorManagement() {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Desativar operador?</AlertDialogTitle>
-                <AlertDialogDescription>As sessões ativas da conta sintética serão revogadas.</AlertDialogDescription>
+                <AlertDialogDescription>As sessões ativas deste operador serão revogadas.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -116,7 +113,7 @@ export function OperatorManagement() {
           </AlertDialog>}
         </Card>
       </li>)}
-      {operators.length === 0 && <li><Card className="w-full p-4 text-sm text-slate-600">Nenhuma conta sintética adicional foi provisionada.</Card></li>}
+      {operators.length === 0 && <li><Card className="w-full p-4 text-sm text-slate-600">Nenhuma conta adicional foi provisionada.</Card></li>}
     </ul>
   </section>;
 }

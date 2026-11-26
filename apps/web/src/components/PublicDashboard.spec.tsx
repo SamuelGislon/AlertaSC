@@ -41,13 +41,13 @@ describe('PublicDashboard', () => {
       alert(),
       alert({ id: 'candidate', title: 'Candidato administrativo', status: 'AWAITING_TRIAGE' }),
       alert({ id: 'expired', title: 'Aviso vencido', expiresAt: '2026-10-22T12:59:59.000Z' }),
-      alert({ id: 'real', title: 'Dado não sintético', synthetic: false }),
+      alert({ id: 'real', title: 'Dado não gerado por IA', synthetic: false }),
     ]} now={Date.parse('2026-10-22T13:00:00.000Z')} onNavigate={vi.fn()} />);
 
     expect(screen.getByText('Atenção para cheias — Rio Índios')).toBeDefined();
     expect(screen.queryByText('Candidato administrativo')).toBeNull();
     expect(screen.queryByText('Aviso vencido')).toBeNull();
-    expect(screen.queryByText('Dado não sintético')).toBeNull();
+    expect(screen.queryByText('Dado não gerado por IA')).toBeNull();
   });
 
   it('offers citizen preferences, feedback and operator login navigation', async () => {
@@ -93,7 +93,7 @@ describe('PublicDashboard', () => {
     expect(screen.getByText(/Gerado em/).closest('time')?.getAttribute('datetime')).toBe(generatedAt);
     expect(screen.getByText(/Expira em/).closest('time')?.getAttribute('datetime')).toBe(expiresAt);
     expect(screen.queryByRole('region', { name: 'Condições atuais' })).toBeNull();
-    expect(screen.queryByRole('img', { name: /Gráfico sintético de precipitação/ })).toBeNull();
+    expect(screen.queryByRole('img', { name: /Gráfico gerado por IA de precipitação/ })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Voltar à fila' }));
     expect(onBackToOperator).toHaveBeenCalledTimes(1);

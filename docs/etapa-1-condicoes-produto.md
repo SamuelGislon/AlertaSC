@@ -8,7 +8,7 @@
 
 ## Resultado para avançar
 
-No momento, **nenhuma das quatro fontes pesquisadas está liberada como conector para a primeira implementação** segundo o critério de possuir API utilizável pelo projeto e condições de uso verificadas. Por decisão do solicitante em 21/10/2026, a implementação inicial usará **dados fictícios/sintéticos**, sem consumir INMET, CEMADEN, Epagri/Ciram ou Defesa Civil SC. INMET e CEMADEN têm APIs oficiais, mas dependem de acesso/credenciais e confirmação das condições ainda não obtidos. A Epagri/Ciram disponibiliza dados por download manual, sem API oficial documentada para ingestão recorrente. Para a Defesa Civil SC, não foi confirmado um conjunto operacional apropriado nem uma API de integração específica.
+No momento, **nenhuma das quatro fontes pesquisadas está liberada como conector para a primeira implementação** segundo o critério de possuir API utilizável pelo projeto e condições de uso verificadas. Por decisão do solicitante em 21/10/2026, a implementação inicial usará **dados fictícios/API**, sem consumir INMET, CEMADEN, Epagri/Ciram ou Defesa Civil SC. INMET e CEMADEN têm APIs oficiais, mas dependem de acesso/credenciais e confirmação das condições ainda não obtidos. A Epagri/Ciram disponibiliza dados por download manual, sem API oficial documentada para ingestão recorrente. Para a Defesa Civil SC, não foi confirmado um conjunto operacional apropriado nem uma API de integração específica.
 
 Essa conclusão é sobre prontidão de integração do AlertaSC. Não significa que os órgãos não tenham dados úteis ou que nunca possam ser integrados.
 
@@ -54,7 +54,7 @@ Para vento, o estado normal continua abaixo de 40 km/h. O solicitante confirmou 
 - O cadastro de cidadãos é voluntário e pode ser removido a qualquer momento.
 - O alerta expira 24 horas após sua geração; expirar não apaga seu histórico/auditoria.
 - Logs não devem conter dados sensíveis ou pessoais desnecessários.
-- O protótipo inicial usa apenas dados fictícios/sintéticos; não recebe cadastros reais nem consome fontes externas.
+- O protótipo inicial usa apenas dados fictícios/API; não recebe cadastros reais nem consome fontes externas.
 
 ### Política operacional escolhida para o protótipo
 
@@ -70,7 +70,7 @@ Por delegação do solicitante, esta política fica definida como padrão de pro
 
 ### Aprovação institucional antes de dados reais
 
-A política permite avançar com dados sintéticos, mas não substitui validação formal do controlador municipal. Antes do primeiro cadastro real, o município deve designar controlador e canal de privacidade, confirmar a base legal, aprovar aviso e processo de direitos, e aceitar os ciclos de 30 dias para logs/backups e o tratamento de cópias residuais. Confirmar também os termos de cada fonte antes de habilitar seu conector.
+A política permite avançar com dados API, mas não substitui validação formal do controlador municipal. Antes do primeiro cadastro real, o município deve designar controlador e canal de privacidade, confirmar a base legal, aprovar aviso e processo de direitos, e aceitar os ciclos de 30 dias para logs/backups e o tratamento de cópias residuais. Confirmar também os termos de cada fonte antes de habilitar seu conector.
 
 A LGPD trata do término, eliminação e direitos do titular, mas não fixa prazo geral único de retenção; conservação depende da finalidade e das hipóteses legais. A ANPD alerta que consentimento nem sempre é adequado no Poder Público, embora possa ser considerado quando a escolha é livre e sem prejuízo ao cidadão. Assim, consentimento é a base proposta para o cadastro voluntário, sujeita à confirmação do controlador, e não parecer jurídico. [LGPD — arts. 15, 16 e 18](https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm) · [FAQ da ANPD — duração do tratamento](https://www.gov.br/anpd/pt-br/acesso-a-informacao/perguntas-frequentes) · [Guia da ANPD para o Poder Público](https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes/guia_orientativo_tratamento_de_dados_pessoais_pelo_poder_publico).
 
@@ -119,4 +119,4 @@ O README atual menciona Open-Meteo, WhatsApp e expansão territorial. O piloto e
 - **ALE-24 — Done:** decisão do solicitante registrada: download e compartilhamento manual opcional no Instagram, sem publicação automática.
 - **ALE-29 — In Progress:** fórmula e detector definidos por delegação do solicitante como padrão provisório; implementação/verificação ainda não realizadas. Os limites ALE-5 permanecem intactos.
 
-**Saída desta etapa:** políticas de privacidade e outliers estão definidas para o protótipo. Dados reais e conectores só entram após as confirmações institucionais indicadas acima. Usar somente dados fictícios/sintéticos. Nenhuma das quatro fontes externas será integrada até existir API/acesso aplicável e condições de uso confirmadas.
+**Saída desta etapa:** políticas de privacidade e outliers estão definidas para o protótipo. Dados reais e conectores só entram após as confirmações institucionais indicadas acima. Usar somente dados fictícios/API. Nenhuma das quatro fontes externas será integrada até existir API/acesso aplicável e condições de uso confirmadas.

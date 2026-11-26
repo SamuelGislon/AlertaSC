@@ -103,9 +103,9 @@ test('keeps the authenticated operator shell and its synthetic screens responsiv
   await page.locator('.bottom-nav').getByRole('button', { name: 'Auditoria', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Histórico e auditoria' })).toBeVisible();
   await page.locator('.bottom-nav').getByRole('button', { name: 'Administração', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Operadores sintéticos' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Cadastros sintéticos' }).click();
-  await expect(page.getByRole('heading', { name: 'Cadastros sintéticos' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Operadores API' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Cadastros API' }).click();
+  await expect(page.getByRole('heading', { name: 'Cadastros API' })).toBeVisible();
 
   for (const viewport of [
     { width: 320, height: 740 },
@@ -129,7 +129,7 @@ test('keeps the authenticated operator shell and its synthetic screens responsiv
       { label: 'Monitoramento', content: /Monitoramento por região/ },
       { label: 'Alertas', content: /Fila de alertas|A aba de alertas/ },
       { label: 'Auditoria', content: /Histórico e auditoria/ },
-      { label: 'Administração', content: /Operadores sintéticos|Cadastros sintéticos/ },
+      { label: 'Administração', content: /Operadores API|Cadastros API/ },
     ]) {
       await navigation.getByRole('button', { name: destination.label, exact: true }).click();
       await expect(page.locator('#main-content')).toContainText(destination.content);
@@ -157,7 +157,7 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
     id: 'rio-indios-video-demo',
     title: 'Atenção para cheias — Rio Índios',
     summary: 'Acompanhe as condições do Rio Índios e siga as orientações da Defesa Civil.',
-    source: 'Fixture local — estação fictícia PG-01',
+    source: 'Fixture local — estação  PG-01',
     area: 'Rio Índios — Presidente Getúlio/SC',
     status: alertStatus,
     generatedAt: '2026-11-16T12:00:00.000Z',
@@ -165,7 +165,7 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
     synthetic: true,
     relatedReadings: [
       {
-        source: 'Fixture local — estação fictícia PG-01',
+        source: 'Fixture local — estação  PG-01',
         metric: 'Precipitação acumulada em 1 hora',
         rawValue: 5.2,
         rawUnit: 'cm',
@@ -176,7 +176,7 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
         synthetic: true,
       },
       {
-        source: 'Fixture local — régua fictícia RI-01',
+        source: 'Fixture local — régua  RI-01',
         metric: 'Nível do Rio Índios',
         rawValue: 4.5,
         rawUnit: 'm',
@@ -260,9 +260,9 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
     await expect(page.getByRole('heading', { name: 'Atenção para cheias — Rio Índios' })).toBeVisible();
     await expect(page.getByText('Rio Índios — Presidente Getúlio/SC')).toBeVisible();
     await expect(page.getByText('4,5 m')).toBeVisible();
-    await expect(page.getByText('Dados sintéticos')).toHaveCount(1);
-    await expect(page.getByText(/não representa observações meteorológicas reais|demonstração sintética|valores sintéticos usados/i)).toHaveCount(0);
-    await expect(page.getByText('Fixture local — régua fictícia RI-01')).toHaveCount(0);
+    await expect(page.getByText('Dados API')).toHaveCount(1);
+    await expect(page.getByText(/não representa observações meteorológicas reais|demonstração sintética|valores API usados/i)).toHaveCount(0);
+    await expect(page.getByText('Fixture local — régua  RI-01')).toHaveCount(0);
     await expect(page.getByText('Estado do alerta alterado', { exact: true })).toHaveCount(0);
     await expect(page.getByText('operator-video-demo', { exact: true })).toHaveCount(0);
 
@@ -275,7 +275,7 @@ test('demonstrates one Rio Índios alert from operator approval to public previe
     await expect(page.getByRole('heading', { name: 'Fila de alertas' })).toBeVisible();
     await page.getByRole('button', { name: 'Pré-visualizar arte do comunicado' }).click();
     await expect(page.getByRole('dialog', { name: /Pré-visualização do comunicado/ })).toBeVisible();
-    await expect(page.getByRole('img', { name: 'Prévia do comunicado sintético aprovado' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Prévia do comunicado gerado por IA aprovado' })).toBeVisible();
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Mais ações do comunicado' }).click();
     const downloadPromise = page.waitForEvent('download');

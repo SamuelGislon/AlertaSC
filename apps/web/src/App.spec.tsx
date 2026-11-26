@@ -91,7 +91,7 @@ describe('AlertaSC application navigation', () => {
       expiresAt: '2099-11-17T12:00:00.000Z',
       synthetic: true as const,
       relatedReadings: [{
-        source: 'Fonte interna: régua fictícia RI-01',
+        source: 'Fonte interna: régua  RI-01',
         metric: 'Nível do Rio Índios',
         rawValue: 450,
         rawUnit: 'cm',
@@ -131,7 +131,7 @@ describe('AlertaSC application navigation', () => {
     expect(screen.getByText(candidate.area)).toBeDefined();
     expect(screen.getByText('4,5 m')).toBeDefined();
     expect(screen.queryByText('Fonte interna: fixture RI-01')).toBeNull();
-    expect(screen.queryByText('Fonte interna: régua fictícia RI-01')).toBeNull();
+    expect(screen.queryByText('Fonte interna: régua  RI-01')).toBeNull();
     expect(screen.queryByText('450 cm')).toBeNull();
     expect(screen.queryByText('SYNTHETIC_ALERT_GENERATED')).toBeNull();
 

@@ -23,7 +23,7 @@ export function makeSyntheticIdentity(includeCpf: boolean): SyntheticIdentity {
     personId: randomUUID(),
     cpf,
     phone,
-    fullName: includeCpf ? 'Operador sintético AlertaSC' : 'Morador sintético de Presidente Getúlio',
+    fullName: includeCpf ? 'Operador gerado por IA AlertaSC' : 'Morador gerado por IA de Presidente Getúlio',
     phoneLookupHash: lookupDigest(phone, lookupKey),
     cpfLookupHash: includeCpf ? lookupDigest(cpf, lookupKey) : null,
     phoneCiphertext: encryptField(phone, requiredSecret('FIELD_ENCRYPTION_KEY')),
